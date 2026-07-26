@@ -38,3 +38,6 @@
 - If they do not, the response must name the missing evidence instead of silently omitting or inventing a recommendation.
 - A single-choice set must be mutually exclusive; a multiple-choice set must explicitly permit combinations.
 - A normal guided question should be answerable in under 30 seconds and fit on one phone screen when the subject permits it.
+- A choice question must be answerable through a native control or `A`/`A+C`; asking the user to type `confirm`, `yes`, or an option label is a regression.
+- An active question turn must not append modified files, commits, hashes, validation logs, or internal workflow summaries.
+- If the host permits neither native nor textual selection, the Skill must expose the limitation and pause rather than degrade to an open confirmation request.

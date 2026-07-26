@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "intentFoundry": {
+      "title": "Intent Foundry",
+      "description": "Interactive guided questions with explicit recommendations and portable intent.",
+      "cwd": ".",
+      "command": "node",
+      "args": ["./mcp/server.cjs", "--stdio"]
+    }
+  }
+}

@@ -13,6 +13,8 @@ Use these gates to keep Guided Clarity from degrading into a generic questionnai
 - A native selector is used when available, and a written `Other` path is always available.
 - The question, tradeoffs, and recommendation rationale are understandable on one phone screen whenever the subject permits it.
 - The user can normally answer in under 30 seconds.
+- A selection can be answered by clicking/tapping or by a short code such as `B` or `A+C`; it never requires typing `confirm`, `yes`, or restating the option.
+- The question turn contains no file list, Git log, validation report, hash, or unrelated completion summary.
 
 ## Before recommending
 
@@ -23,6 +25,7 @@ Use these gates to keep Guided Clarity from degrading into a generic questionnai
 - The recommended option includes its material downside.
 - The rationale is separate from the localized `(Recommended)` or `(Recomendado)` label.
 - The recommendation remains an AI proposal until the user confirms it.
+- Confirmation occurs by selecting the recommended option or combination, not by a separate free-form confirmation step.
 
 ## Before persisting
 

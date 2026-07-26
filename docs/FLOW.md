@@ -1,6 +1,6 @@
-# Flow and structure
+# Flow and architecture
 
-Guided Clarity is a small stateful decision loop, not a static questionnaire.
+Guided Clarity is a stateful decision loop with a native interaction layer, not a static questionnaire.
 
 ## Runtime flow
 
@@ -11,15 +11,17 @@ Select mode and highest-impact unknown
     ↓
 Design one low-friction question
     ↓
-Present native choices + Other when supported
+Call present_guided_question
     ↓
-Capture selection, correction, or uncertainty
+Render choices + Other in the MCP App
+    ↓
+Submit a structured answer to the conversation
     ↓
 Classify: Confirmed | Inferred | Unknown
     ↓
-Persist state and recommendation status
+Persist durable project state silently
     ↓
-Adapt next question ── or ── produce reviewed Intent Pack
+Adapt next question — or — produce reviewed Intent Pack
 ```
 
 The modes change the reasoning lens, not the interaction contract:
@@ -37,30 +39,27 @@ Every normal question must:
 2. show two to four materially different choices;
 3. expose a consequence or tradeoff for each choice;
 4. preserve a written `Other` path;
-5. show exactly one localized recommendation when evidence and confirmed criteria support it;
+5. show exactly one localized recommendation when confirmed criteria support it;
 6. explain the recommendation and its downside separately;
 7. remain unconfirmed until the user chooses it.
 
-An open-first question is an exception for narratives, sensitive context, original wording, or cases where choices would bias the answer.
+The MCP App supports single selection, multiple selection, ranking, progress, host-local draft state, and disabled-until-valid submission. A separate “type confirm” step is not part of the flow. Operational reports appear only on request, pause, failure, or handoff.
+
+An open-first question is an exception for narratives, sensitive context, original wording, or cases where choices would materially bias the answer.
 
 ## Package structure
 
 ```text
 intent-foundry/
 ├── .codex-plugin/plugin.json       # Plugin identity and discovery metadata
-├── skills/guided-clarity/
-│   ├── SKILL.md                    # Short runtime contract and loop
-│   ├── agents/openai.yaml          # Skill UI metadata
-│   ├── references/
-│   │   ├── modes.md                # Reasoning lenses
-│   │   ├── question-design.md      # Detailed question UX rules
-│   │   ├── quality-gates.md        # Acceptance gates
-│   │   └── portability.md          # Cross-model handoff rules
-│   └── assets/
-│       ├── INTERVIEW_STATE.template.md
-│       └── INTENT_PACK.template.md
-├── tests/marketplace-cases.md       # Behavioral regression cases
+├── .mcp.json                       # Local MCP process registration
+├── server/src/server.ts            # Tool schema, validation, and UI resource
+├── ui/src/                         # Accessible interactive component
+├── shared/question.ts              # Answer contract and validation
+├── mcp/                            # Reproducible bundled runtime artifacts
+├── skills/guided-clarity/          # Reasoning workflow and portable fallback
+├── tests/                          # Behavior, domain, and MCP smoke tests
 └── docs/DIFFERENTIATION.md          # Product contract and metrics
 ```
 
-`SKILL.md` owns the runtime sequence. References own detailed rules without duplicating the core. Assets define durable outputs. Tests protect observable behavior. The host controls whether choices appear as native controls or a compliant fallback; the Skill never claims UI capabilities the host does not expose.
+`SKILL.md` owns reasoning and interview sequencing. The MCP tool owns the typed question contract. The component owns interaction ergonomics and host-local draft state. Durable project state remains explicit Markdown rather than hidden server storage. Compatible hosts without MCP Apps use the portable Skill contract.

@@ -1,6 +1,6 @@
 # Installation and sharing
 
-Use release `v0.1.1` for a reproducible installation.
+Use stable Skill release `v0.1.1` for portable installation. The full interactive plugin is currently `0.2.0-beta.1` and is not yet a stable marketplace release.
 
 ## Message you can share
 
@@ -86,10 +86,7 @@ Official guide: https://code.claude.com/docs/en/skills
 
 ## Integrity
 
-SHA-256 for release assets:
-
-- Gemini ZIP: `8c653c61e2e2ff375925a0c7fea84b7d0afc40d22b7d88451dc20f10dafbf84d`
-- Claude ZIP: `40d5bc1f72b916377d9e6c92f45c18fc0d6606351eebe7d40fa98702ea118546`
+SHA-256 values are published with each stable release. Do not reuse hashes from another version.
 
 ## Functional boundary
 

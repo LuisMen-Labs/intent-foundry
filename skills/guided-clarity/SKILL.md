@@ -31,8 +31,16 @@ Help the user understand and express what they mean before an AI acts. Treat the
 - When evidence and confirmed criteria support a preference, **must** mark exactly one option or one combination with the localized suffix ` (Recommended)` or ` (Recomendado)`. Put the rationale and material downside outside the label.
 - When evidence is insufficient, do not manufacture a recommendation. Say what fact is missing and offer a low-effort path to resolve it.
 - Treat every recommendation as a proposal until the user explicitly selects or confirms it.
-- If host policy forbids textual choices and no native selector exists, state the interface limitation briefly and ask the smallest possible free response. Do not pretend choices were shown.
+- In a textual fallback, accept one letter for single choice and combinations such as `A+C` for multiple choice. Never replace a selection with instructions to type `confirm`, `yes`, an option label, or another arbitrary word.
+- If host policy forbids textual choices and no native selector exists, pause the question and state that the required selection interface is unavailable. Do not degrade it into an open confirmation prompt or pretend choices were shown.
 - Choose for information gain: ask what most reduces consequential uncertainty, not what is easiest to ask.
+
+## Keep interview turns clean
+
+- During an active interview, make the user-facing turn contain only the progress cue, one question, selectable choices, recommendation rationale, downside, and `Other` path.
+- Persist state silently. Do not append modified-file lists, Git activity, hashes, validation logs, internal workflow, or a generic completion summary to a question turn.
+- Report operational details only when the user asks, pauses, requests a handoff, or a material failure requires attention.
+- Keep source citations out of the choice block. Include only the minimum evidence note needed to understand a high-stakes recommendation.
 
 Use this compact fallback only when the host permits textual choices:
 
@@ -46,7 +54,7 @@ B. Option — tradeoff (Recommended)
 C. I don't know yet — what would help decide
 
 Why B: evidence or decision criterion. Downside: material cost or risk.
-Other answer: write what fits better.
+Other: write what fits better.
 ```
 
 ## Verify rather than fill gaps

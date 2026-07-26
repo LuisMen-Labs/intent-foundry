@@ -1,6 +1,6 @@
 {
   "name": "intent-foundry",
-  "version": "0.1.1",
+  "version": "0.2.0-beta.1",
   "description": "Turn ambiguous requests into verified, portable intent before AI acts.",
   "author": {
     "name": "LuisMen-Labs",
@@ -11,6 +11,7 @@
   "license": "MIT",
   "keywords": ["clarification", "intent", "decisions", "requirements", "handoff", "alignment"],
   "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Intent Foundry",
     "shortDescription": "Understand first. Act with clarity.",

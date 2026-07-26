@@ -1,5 +1,7 @@
 .DS_Store
 Thumbs.db
 *.zip
+node_modules/
+.vite/
 __pycache__/
 .pytest_cache/

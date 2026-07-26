@@ -2,19 +2,19 @@
 
 **Understand first. Act with clarity.**
 
-Intent Foundry is an open-source Codex plugin that turns incomplete ideas into verified, portable intent before AI acts. Its first Skill, **Guided Clarity**, asks one adaptive question at a time, explains recommendations, challenges assumptions, and creates an Intent Pack another chat, device, model, or agent can continue.
+Intent Foundry is an open-source Codex plugin that turns incomplete ideas into verified, portable intent before AI acts. **Guided Clarity** supplies the reasoning workflow; its MCP App renders the decision as a native interactive card instead of forcing the user to type confirmation words.
 
 ## What makes it different
 
 - One high-value question per turn instead of a static questionnaire.
 - Guided choices by default, with an open question only when choices would distort the answer.
-- Native choice controls when available, plus an `Other` path for writing freely.
+- Native single-select, multi-select, ranking, and written `Other` controls in compatible ChatGPT/Codex hosts.
 - Recommendations with reasons, never hidden steering.
 - Confirmed, inferred, and unknown information kept separate.
 - Contradictions, biases, falsifiers, and permissions made explicit.
 - Durable state and a portable Markdown handoff.
 - Spanish or English interaction that follows the user's language.
-- No external service, account, API key, or telemetry.
+- Silent draft persistence in the host, without an Intent Foundry account, API key, or telemetry.
 
 ## Use it
 
@@ -26,7 +26,12 @@ Example prompts:
 - `Use $guided-clarity to help me choose, and show the tradeoffs.`
 - `Use $guided-clarity to challenge my assumptions and create a portable handoff.`
 
-## Install from source
+## Two product layers
+
+- **Full Codex plugin (`0.2.0-beta.1`):** Skill + local MCP server + interactive UI. This is the premium experience under active validation.
+- **Portable Skill:** the reasoning workflow alone remains usable in compatible Skill hosts such as Claude, Gemini, Antigravity, and Codex, but its visual controls depend on the host.
+
+## Install the portable Skill
 
 Ask Codex:
 
@@ -55,7 +60,7 @@ Platform-ready downloads and exact installation paths are documented in [docs/IN
 
 ## Status
 
-Version `0.1.1` is an evidence-seeking public preview. It makes guided, low-friction choices the default and keeps free writing as an escape. Adoption, effectiveness, and recommendation quality remain hypotheses to test, not established claims.
+Version `0.2.0-beta.1` is an evidence-seeking plugin beta. The interactive component is implemented and locally tested, but public release, cross-host testing, accessibility audit, and user evidence remain pending. Adoption, effectiveness, and superiority over another product are hypotheses to test, not established claims.
 
 The integrated product hypothesis and its acceptance tests are documented in [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
 The runtime loop and package boundaries are documented in [docs/FLOW.md](docs/FLOW.md).
