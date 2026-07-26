@@ -37,6 +37,8 @@ For `multi`, omit `maxSelections` by default. A lower cap is valid only when a r
 
 Prefer the host's native selector. Follow its option-count and label constraints. Put tradeoffs in descriptions and use its built-in `Other` response when present. Do not simulate buttons with prose when host policy prohibits textual multiple-choice questions.
 
+Default to a compact first scan. Show only the question, option labels, recommendation badge, progress, `Other`, and `Skip`; reveal descriptions and downsides when an option is selected, and keep rationale in a secondary details control. Deep coaching should improve the decision without making every turn read like a report.
+
 When `present_guided_question` is available, read [mcp-integration.md](mcp-integration.md) and call it. Availability without invocation is an integration failure, not a native-selector success.
 
 When native controls are unavailable but textual choices are allowed, use letters and accept `A`, `B`, or combinations such as `A+C`. Do not ask the user to type `confirm`, `yes`, or repeat an option label. When neither native nor textual selection is allowed, pause instead of converting the decision into an open prompt.

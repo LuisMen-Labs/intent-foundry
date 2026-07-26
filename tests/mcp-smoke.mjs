@@ -12,6 +12,7 @@ try {
   await client.connect(transport);
   const tools = await client.listTools();
   assert(tools.tools.some((tool) => tool.name === "present_guided_question"));
+  assert(tools.tools.some((tool) => tool.name === "submit_guided_answer"));
 
   const result = await client.callTool({
     name: "present_guided_question",
@@ -51,7 +52,17 @@ try {
   });
   assert.equal(invalid.isError, true);
 
-  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-question-v3.html" });
+  const submitted = await client.callTool({
+    name: "submit_guided_answer",
+    arguments: {
+      question: result.structuredContent,
+      answer: { questionId: "smoke-1", kind: "single", selected: ["A"], labels: ["Safe path"] },
+    },
+  });
+  assert.equal(submitted.isError, undefined);
+  assert.equal(submitted.structuredContent.answer.selected[0], "A");
+
+  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-question-v4.html" });
   assert(resource.contents[0].text.includes("Intent Foundry"));
   process.stdout.write("MCP smoke test passed\n");
 } finally {

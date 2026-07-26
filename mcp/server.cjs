@@ -28371,10 +28371,37 @@ function validateQuestion(question) {
   }
   return null;
 }
+function validateAnswer(question, answer) {
+  const questionError = validateQuestion(question);
+  if (questionError) return `invalid_question:${questionError}`;
+  const optionIds = new Set(question.options.map((option) => option.id));
+  if (answer.questionId !== question.questionId || answer.kind !== question.kind) {
+    return "answer_mismatch";
+  }
+  if (answer.skipped) {
+    if (!question.allowSkip) return "skip_not_allowed";
+    if (answer.selected.length || answer.labels.length || answer.other?.trim()) return "skip_must_be_empty";
+    return null;
+  }
+  if (answer.selected.some((id) => !optionIds.has(id))) return "unknown_option";
+  if (new Set(answer.selected).size !== answer.selected.length) return "duplicate_option";
+  if (answer.labels.length !== answer.selected.length) return "labels_mismatch";
+  if (answer.other?.trim() && !question.otherAllowed) return "other_not_allowed";
+  if (answer.other && answer.other.length > 1e3) return "other_too_long";
+  const count = answer.selected.length + (answer.other?.trim() ? 1 : 0);
+  if (question.kind === "rank" && answer.selected.length !== question.options.length) {
+    return "rank_all_options";
+  }
+  if (count < question.minSelections) return "too_few_selections";
+  if (question.maxSelections !== void 0 && count > question.maxSelections) {
+    return "too_many_selections";
+  }
+  return null;
+}
 
 // server/src/server.ts
-var VERSION = "0.2.0-beta.3";
-var RESOURCE_URI = "ui://intent-foundry/guided-question-v3.html";
+var VERSION = "0.2.0-beta.4";
+var RESOURCE_URI = "ui://intent-foundry/guided-question-v4.html";
 var root = (0, import_node_path.resolve)(__dirname, "..");
 var widgetHtml = (0, import_node_fs.readFileSync)((0, import_node_path.resolve)(root, "mcp/assets/index.html"), "utf8");
 var optionSchema = external_exports.object({
@@ -28393,16 +28420,25 @@ var questionSchema = {
   progress: external_exports.object({ current: external_exports.number().int().positive(), total: external_exports.number().int().positive().optional(), label: external_exports.string().max(80).optional() }).optional(),
   recommendationReason: external_exports.string().max(400).optional(),
   otherAllowed: external_exports.boolean().optional(),
+  allowSkip: external_exports.boolean().optional(),
   minSelections: external_exports.number().int().min(1).optional(),
   maxSelections: external_exports.number().int().positive().optional(),
   selectionLimitReason: external_exports.string().max(240).optional(),
   locale: external_exports.enum(["es", "en"]).default("es")
 };
+var answerSchema = external_exports.object({
+  questionId: external_exports.string().min(1).max(80),
+  kind: external_exports.enum(["single", "multi", "rank"]),
+  selected: external_exports.array(external_exports.string().min(1).max(24)).max(8),
+  labels: external_exports.array(external_exports.string().max(120)).max(8),
+  other: external_exports.string().max(1e3).optional(),
+  skipped: external_exports.boolean().optional()
+});
 function createServer() {
   const server = new McpServer({ name: "intent-foundry", version: VERSION });
   K3(server, "present_guided_question", {
     title: "Present a guided question",
-    description: "Always use this tool when Guided Clarity needs one answer. Use single only when one choice logically excludes all others, multi for compatible components, and rank for priority order. Never impose a restrictive multi-select maximum without a concrete selectionLimitReason. The card includes tradeoffs, an optional evidence-backed recommendation, progress, and Other. Ask exactly one question and do not repeat it in prose.",
+    description: "Always use this tool when Guided Clarity needs one answer. Use single only when one choice logically excludes all others, multi for compatible components, and rank for priority order. Never impose a restrictive multi-select maximum without a concrete selectionLimitReason. The compact card progressively reveals tradeoffs and supports an optional evidence-backed recommendation, progress, Other, and Skip. Ask exactly one question and do not repeat it in prose.",
     inputSchema: questionSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     _meta: {
@@ -28414,6 +28450,7 @@ function createServer() {
     const question = {
       ...input,
       otherAllowed: input.kind === "rank" ? false : input.otherAllowed ?? true,
+      allowSkip: input.allowSkip ?? true,
       minSelections: input.kind === "rank" ? input.options.length : input.minSelections ?? 1,
       maxSelections: input.kind === "single" || input.kind === "rank" ? input.kind === "rank" ? input.options.length : 1 : input.maxSelections
     };
@@ -28426,9 +28463,30 @@ function createServer() {
       structuredContent: question
     };
   });
+  server.registerTool("submit_guided_answer", {
+    title: "Submit a guided answer",
+    description: "Validate and return an answer submitted inside the Intent Foundry card. This is an internal UI transport; do not call it to invent or infer a user's answer.",
+    inputSchema: { question: external_exports.object(questionSchema), answer: answerSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    _meta: {
+      "openai/toolInvocation/invoking": "Saving answer\u2026",
+      "openai/toolInvocation/invoked": "Answer saved"
+    }
+  }, async ({ question, answer }) => {
+    const validationError = validateAnswer(question, answer);
+    if (validationError) {
+      return { isError: true, content: [{ type: "text", text: `Invalid guided answer: ${validationError}` }] };
+    }
+    const normalized = answer;
+    return {
+      content: [{ type: "text", text: `intent_foundry_answer_v1
+${JSON.stringify(normalized)}` }],
+      structuredContent: { marker: "intent_foundry_answer_v1", answer: normalized }
+    };
+  });
   N3(server, "Intent Foundry guided question", RESOURCE_URI, {
     mimeType: p,
-    description: "Accessible single-select, multi-select, and ranking question interface."
+    description: "Compact accessible single-select, multi-select, and ranking interface with progressive disclosure."
   }, async () => ({ contents: [{ uri: RESOURCE_URI, mimeType: p, text: widgetHtml, _meta: { ui: { prefersBorder: false } } }] }));
   return server;
 }

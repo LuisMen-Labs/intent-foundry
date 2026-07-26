@@ -15,6 +15,7 @@ Intent Foundry is an open-source Codex plugin that turns incomplete ideas into v
 - Durable state and a portable Markdown handoff.
 - Spanish or English interaction that follows the user's language.
 - Silent draft persistence in the host, without an Intent Foundry account, API key, or telemetry.
+- Internal answer submission through an MCP tool instead of a follow-up chat message; automatic next-turn behavior remains host-dependent during beta.
 
 ## Use it
 
@@ -28,7 +29,7 @@ Example prompts:
 
 ## Two product layers
 
-- **Full Codex plugin (`0.2.0-beta.3`):** Skill + local MCP server + interactive UI. This is the premium experience under active validation.
+- **Full Codex plugin (`0.2.0-beta.4`):** Skill + local MCP server + compact interactive UI. This is the premium experience under active validation.
 - **Portable Skill:** the reasoning workflow alone remains usable in compatible Skill hosts such as Claude, Gemini, Antigravity, and Codex, but its visual controls depend on the host.
 
 ## Install the portable Skill
@@ -60,7 +61,7 @@ Platform-ready downloads and exact installation paths are documented in [docs/IN
 
 ## Status
 
-Version `0.2.0-beta.3` adds a decision-shape classifier, a six-gate coaching-quality rubric, rejection of unexplained multi-select caps, and visible reasons for genuine selection limits. Public release, cross-host testing, a screen-reader audit, and comparative user evidence remain pending. Adoption, effectiveness, and superiority over another product are hypotheses to test, not established claims.
+Version `0.2.0-beta.4` makes the default interaction compact and quiet: flat choice rows, discreet progress, inline `Something else`, explicit `Skip`, and progressive disclosure of tradeoffs and rationale. It preserves beta.3's decision-shape classifier, coaching rubric, and protection against arbitrary multi-select caps. Public release, cross-host testing, a screen-reader audit, and comparative user evidence remain pending. Adoption, effectiveness, and superiority over another product are hypotheses to test, not established claims.
 
 The integrated product hypothesis and its acceptance tests are documented in [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
 The runtime loop and package boundaries are documented in [docs/FLOW.md](docs/FLOW.md).

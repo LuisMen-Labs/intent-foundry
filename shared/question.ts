@@ -17,6 +17,7 @@ export interface GuidedQuestion {
   progress?: { current: number; total?: number; label?: string };
   recommendationReason?: string;
   otherAllowed: boolean;
+  allowSkip?: boolean;
   minSelections: number;
   maxSelections?: number;
   selectionLimitReason?: string;
@@ -29,6 +30,7 @@ export interface GuidedAnswer {
   selected: string[];
   labels: string[];
   other?: string;
+  skipped?: boolean;
 }
 
 export function validateQuestion(question: GuidedQuestion): string | null {
@@ -82,6 +84,11 @@ export function validateAnswer(question: GuidedQuestion, answer: GuidedAnswer): 
   const optionIds = new Set(question.options.map((option) => option.id));
   if (answer.questionId !== question.questionId || answer.kind !== question.kind) {
     return "answer_mismatch";
+  }
+  if (answer.skipped) {
+    if (!question.allowSkip) return "skip_not_allowed";
+    if (answer.selected.length || answer.labels.length || answer.other?.trim()) return "skip_must_be_empty";
+    return null;
   }
   if (answer.selected.some((id) => !optionIds.has(id))) return "unknown_option";
   if (new Set(answer.selected).size !== answer.selected.length) return "duplicate_option";

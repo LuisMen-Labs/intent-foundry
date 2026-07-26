@@ -4,11 +4,11 @@ import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@model
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import type { GuidedQuestion } from "../../shared/question";
-import { validateQuestion } from "../../shared/question";
+import type { GuidedAnswer, GuidedQuestion } from "../../shared/question";
+import { validateAnswer, validateQuestion } from "../../shared/question";
 
-const VERSION = "0.2.0-beta.3";
-const RESOURCE_URI = "ui://intent-foundry/guided-question-v3.html";
+const VERSION = "0.2.0-beta.4";
+const RESOURCE_URI = "ui://intent-foundry/guided-question-v4.html";
 const root = resolve(__dirname, "..");
 const widgetHtml = readFileSync(resolve(root, "mcp/assets/index.html"), "utf8");
 
@@ -29,18 +29,28 @@ const questionSchema = {
   progress: z.object({ current: z.number().int().positive(), total: z.number().int().positive().optional(), label: z.string().max(80).optional() }).optional(),
   recommendationReason: z.string().max(400).optional(),
   otherAllowed: z.boolean().optional(),
+  allowSkip: z.boolean().optional(),
   minSelections: z.number().int().min(1).optional(),
   maxSelections: z.number().int().positive().optional(),
   selectionLimitReason: z.string().max(240).optional(),
   locale: z.enum(["es", "en"]).default("es"),
 };
 
+const answerSchema = z.object({
+  questionId: z.string().min(1).max(80),
+  kind: z.enum(["single", "multi", "rank"]),
+  selected: z.array(z.string().min(1).max(24)).max(8),
+  labels: z.array(z.string().max(120)).max(8),
+  other: z.string().max(1000).optional(),
+  skipped: z.boolean().optional(),
+});
+
 function createServer() {
   const server = new McpServer({ name: "intent-foundry", version: VERSION });
 
   registerAppTool(server, "present_guided_question", {
     title: "Present a guided question",
-    description: "Always use this tool when Guided Clarity needs one answer. Use single only when one choice logically excludes all others, multi for compatible components, and rank for priority order. Never impose a restrictive multi-select maximum without a concrete selectionLimitReason. The card includes tradeoffs, an optional evidence-backed recommendation, progress, and Other. Ask exactly one question and do not repeat it in prose.",
+    description: "Always use this tool when Guided Clarity needs one answer. Use single only when one choice logically excludes all others, multi for compatible components, and rank for priority order. Never impose a restrictive multi-select maximum without a concrete selectionLimitReason. The compact card progressively reveals tradeoffs and supports an optional evidence-backed recommendation, progress, Other, and Skip. Ask exactly one question and do not repeat it in prose.",
     inputSchema: questionSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     _meta: {
@@ -52,6 +62,7 @@ function createServer() {
     const question: GuidedQuestion = {
       ...input,
       otherAllowed: input.kind === "rank" ? false : (input.otherAllowed ?? true),
+      allowSkip: input.allowSkip ?? true,
       minSelections: input.kind === "rank" ? input.options.length : (input.minSelections ?? 1),
       maxSelections: input.kind === "single" || input.kind === "rank" ? (input.kind === "rank" ? input.options.length : 1) : input.maxSelections,
     };
@@ -66,9 +77,30 @@ function createServer() {
     };
   });
 
+  server.registerTool("submit_guided_answer", {
+    title: "Submit a guided answer",
+    description: "Validate and return an answer submitted inside the Intent Foundry card. This is an internal UI transport; do not call it to invent or infer a user's answer.",
+    inputSchema: { question: z.object(questionSchema), answer: answerSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    _meta: {
+      "openai/toolInvocation/invoking": "Saving answer…",
+      "openai/toolInvocation/invoked": "Answer saved",
+    },
+  }, async ({ question, answer }) => {
+    const validationError = validateAnswer(question as GuidedQuestion, answer as GuidedAnswer);
+    if (validationError) {
+      return { isError: true, content: [{ type: "text" as const, text: `Invalid guided answer: ${validationError}` }] };
+    }
+    const normalized = answer as GuidedAnswer;
+    return {
+      content: [{ type: "text" as const, text: `intent_foundry_answer_v1\n${JSON.stringify(normalized)}` }],
+      structuredContent: { marker: "intent_foundry_answer_v1", answer: normalized },
+    };
+  });
+
   registerAppResource(server, "Intent Foundry guided question", RESOURCE_URI, {
     mimeType: RESOURCE_MIME_TYPE,
-    description: "Accessible single-select, multi-select, and ranking question interface.",
+    description: "Compact accessible single-select, multi-select, and ranking interface with progressive disclosure.",
   }, async () => ({ contents: [{ uri: RESOURCE_URI, mimeType: RESOURCE_MIME_TYPE, text: widgetHtml, _meta: { ui: { prefersBorder: false } } }] }));
 
   return server;

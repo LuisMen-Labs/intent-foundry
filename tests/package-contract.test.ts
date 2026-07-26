@@ -27,6 +27,26 @@ describe("Skill and MCP integration contract", () => {
     assert.match(read("ui/src/main.tsx"), new RegExp(marker));
   });
 
+  it("submits internally without the follow-up-message channel", () => {
+    const ui = read("ui/src/main.tsx");
+    const server = read("server/src/server.ts");
+    assert.match(ui, /callServerTool/);
+    assert.match(ui, /updateModelContext/);
+    assert.doesNotMatch(ui, /sendMessage/);
+    assert.match(server, /submit_guided_answer/);
+  });
+
+  it("keeps the compact, progressive-disclosure response contract", () => {
+    const shared = read("shared/question.ts");
+    const ui = read("ui/src/main.tsx");
+    const integration = read("skills/guided-clarity/references/mcp-integration.md");
+    assert.match(shared, /allowSkip/);
+    assert.match(shared, /skipped/);
+    assert.match(ui, /Algo más/);
+    assert.match(ui, /Omitir/);
+    assert.match(integration, /progressive disclosure/);
+  });
+
   it("requires decision-shape classification, coaching quality, and explained caps", () => {
     const skill = read("skills/guided-clarity/SKILL.md");
     const design = read("skills/guided-clarity/references/question-design.md");

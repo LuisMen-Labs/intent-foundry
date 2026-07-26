@@ -19,8 +19,8 @@ declare global {
 }
 
 const copy = {
-  es: { recommended: "Recomendado", other: "Otra respuesta", placeholder: "Escribe tu respuesta…", submit: "Continuar", sending: "Enviando…", sent: "Respuesta enviada", error: "No se pudo enviar. Intenta de nuevo.", invalid: "La pregunta no se pudo mostrar de forma segura.", why: "Por qué importa", downside: "A tener en cuenta", moveUp: "Subir", moveDown: "Bajar", chooseOne: "Elige una opción", chooseUpTo: "Puedes elegir hasta", chooseAtLeast: "Elige al menos", rank: "Ordena de mayor a menor prioridad", limit: "Límite de selecciones alcanzado", otherLabel: "Escribe otra respuesta", invalidSelection: "La selección necesita una corrección" },
-  en: { recommended: "Recommended", other: "Other answer", placeholder: "Write your answer…", submit: "Continue", sending: "Sending…", sent: "Answer sent", error: "Could not send. Try again.", invalid: "The question could not be displayed safely.", why: "Why it matters", downside: "Keep in mind", moveUp: "Move up", moveDown: "Move down", chooseOne: "Choose one option", chooseUpTo: "Choose up to", chooseAtLeast: "Choose at least", rank: "Order from highest to lowest priority", limit: "Selection limit reached", otherLabel: "Write another answer", invalidSelection: "The selection needs correction" },
+  es: { recommended: "Recomendado", other: "Algo más", placeholder: "Escribe lo que encaja mejor…", submit: "Continuar", skip: "Omitir", sending: "Enviando…", sent: "Respuesta enviada", error: "No se pudo enviar. Intenta de nuevo.", invalid: "La pregunta no se pudo mostrar de forma segura.", details: "Ver criterio", why: "Por qué importa", downside: "A tener en cuenta", moveUp: "Subir", moveDown: "Bajar", chooseOne: "Elige una opción", chooseUpTo: "Puedes elegir hasta", chooseAtLeast: "Elige al menos", rank: "Ordena de mayor a menor prioridad", limit: "Límite de selecciones alcanzado", otherLabel: "Escribe otra respuesta", invalidSelection: "La selección necesita una corrección" },
+  en: { recommended: "Recommended", other: "Something else", placeholder: "Write what fits better…", submit: "Continue", skip: "Skip", sending: "Sending…", sent: "Answer sent", error: "Could not send. Try again.", invalid: "The question could not be displayed safely.", details: "View rationale", why: "Why it matters", downside: "Keep in mind", moveUp: "Move up", moveDown: "Move down", chooseOne: "Choose one option", chooseUpTo: "Choose up to", chooseAtLeast: "Choose at least", rank: "Order from highest to lowest priority", limit: "Selection limit reached", otherLabel: "Write another answer", invalidSelection: "The selection needs correction" },
 };
 
 const previewKind = new URLSearchParams(window.location.search).get("preview");
@@ -37,6 +37,7 @@ const previewQuestion: GuidedQuestion | null = previewKind ? {
   progress: { current: 13, total: 18, label: "Política de riesgo" },
   recommendationReason: "Combinar ambos límites cubre pérdidas rápidas y deterioro acumulado sin depender de una sola señal.",
   otherAllowed: previewKind !== "rank",
+  allowSkip: true,
   minSelections: previewKind === "rank" ? 3 : 1,
   maxSelections: previewKind === "single" ? 1 : previewKind === "rank" ? 3 : undefined,
   locale: "es",
@@ -51,7 +52,7 @@ function App() {
   const [hostError, setHostError] = useState<string | null>(null);
 
   const { app, error } = useApp({
-    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.3" },
+    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.4" },
     capabilities: {},
     onAppCreated: (created: McpApp) => {
       created.ontoolresult = (result) => {
@@ -111,10 +112,6 @@ function App() {
   const validationError = validateAnswer(question, answer);
   const selectionCount = selected.length + (otherOpen ? 1 : 0);
   const atLimit = question.maxSelections !== undefined && selectionCount >= question.maxSelections;
-  const progressWidth = question.progress?.total
-    ? Math.min(100, (question.progress.current / question.progress.total) * 100)
-    : undefined;
-
   const choose = (id: string) => {
     setStatus("idle");
     if (question.kind === "single") {
@@ -143,22 +140,38 @@ function App() {
     });
   };
 
-  const submit = async () => {
-    if (validationError) return;
+  const sendAnswer = async (nextAnswer: GuidedAnswer) => {
     setStatus("sending");
     if (previewQuestion) {
       window.setTimeout(() => setStatus("sent"), 250);
       return;
     }
     try {
-      const result = await app!.sendMessage({
-        role: "user",
-        content: [{ type: "text", text: `intent_foundry_answer_v1\n${JSON.stringify({ ...answer, other: answer.other ?? null })}` }],
+      const result = await app!.callServerTool({
+        name: "submit_guided_answer",
+        arguments: { question, answer: nextAnswer },
       });
+      if (!result.isError) {
+        await app!.updateModelContext({
+          content: [{ type: "text", text: `intent_foundry_answer_v1\n${JSON.stringify(nextAnswer)}` }],
+          structuredContent: { marker: "intent_foundry_answer_v1", answer: nextAnswer },
+        });
+      }
       setStatus(result.isError ? "error" : "sent");
     } catch {
       setStatus("error");
     }
+  };
+
+  const submit = async () => {
+    if (validationError) return;
+    await sendAnswer(answer);
+  };
+
+  const skip = async () => {
+    if (!question.allowSkip) return;
+    const skipped: GuidedAnswer = { questionId: question.questionId, kind: question.kind, selected: [], labels: [], skipped: true };
+    await sendAnswer(skipped);
   };
 
   const orderedOptions = question.kind === "rank"
@@ -168,16 +181,10 @@ function App() {
   return (
     <main className="shell">
       <section className="card" aria-labelledby="question-title">
-        {question.progress && (
-          <div className="progress-wrap" aria-label={question.progress.label}>
-            <div className="progress-copy"><span>{question.progress.label}</span><span>{question.progress.current}{question.progress.total ? ` / ${question.progress.total}` : ""}</span></div>
-            {progressWidth !== undefined && <div className="progress-track" role="progressbar" aria-valuemin={1} aria-valuemax={question.progress.total} aria-valuenow={question.progress.current}><div className="progress-bar" style={{ width: `${progressWidth}%` }} /></div>}
-          </div>
-        )}
-
-        <h1 id="question-title">{question.question}</h1>
-        {question.why && <details className="why"><summary>{t.why}</summary><p>{question.why}</p></details>}
-        <p className="selection-hint" aria-live="polite">{question.kind === "single" ? t.chooseOne : question.kind === "rank" ? t.rank : `${atLimit ? t.limit : question.maxSelections ? `${t.chooseAtLeast} ${question.minSelections} · ${t.chooseUpTo} ${question.maxSelections}` : `${t.chooseAtLeast} ${question.minSelections}`}${question.selectionLimitReason ? ` · ${question.selectionLimitReason}` : ""}`}</p>
+        <header className="question-header">
+          <h1 id="question-title">{question.question}</h1>
+          {question.progress && <span className="progress-copy" aria-label={question.progress.label}>{question.progress.total ? `${question.progress.current} de ${question.progress.total}` : (question.progress.label || question.progress.current)}</span>}
+        </header>
 
         <div className="options" role={question.kind === "single" ? "radiogroup" : question.kind === "multi" ? "group" : "list"}>
           {orderedOptions.map((option, index) => {
@@ -188,7 +195,7 @@ function App() {
                 {question.kind === "rank" ? (
                   <div className="rank-row">
                     <span className="rank-number">{index + 1}</span>
-                    <OptionCopy option={option} recommendedLabel={t.recommended} downsideLabel={t.downside} />
+                    <OptionCopy option={option} selected={true} recommendedLabel={t.recommended} downsideLabel={t.downside} />
                     <div className="rank-actions">
                       <button aria-label={`${t.moveUp}: ${option.label}`} disabled={index === 0} onClick={() => move(index, -1)}>↑</button>
                       <button aria-label={`${t.moveDown}: ${option.label}`} disabled={index === orderedOptions.length - 1} onClick={() => move(index, 1)}>↓</button>
@@ -197,8 +204,8 @@ function App() {
                 ) : (
                   <label>
                     <input type={question.kind === "single" ? "radio" : "checkbox"} name={question.questionId} checked={checked} disabled={disabled} onChange={() => choose(option.id)} />
-                    <span className="control" aria-hidden="true" />
-                    <OptionCopy option={option} recommendedLabel={t.recommended} downsideLabel={t.downside} />
+                    <span className="choice-key" aria-hidden="true">{option.id}</span>
+                    <OptionCopy option={option} selected={checked} recommendedLabel={t.recommended} downsideLabel={t.downside} />
                   </label>
                 )}
               </div>
@@ -206,22 +213,23 @@ function App() {
           })}
 
           {question.otherAllowed && question.kind !== "rank" && (
-            <div className={`option other ${otherOpen ? "selected" : ""}`}>
+            <div className={`other ${otherOpen ? "selected" : ""}`}>
               <label>
                 <input type={question.kind === "single" ? "radio" : "checkbox"} name={question.questionId} checked={otherOpen} disabled={!otherOpen && atLimit} onChange={() => { const next = !otherOpen; setOtherOpen(next); if (!next) setOther(""); if (question.kind === "single") setSelected([]); }} />
-                <span className="control" aria-hidden="true" />
-                <span className="option-copy"><strong>{t.other}</strong></span>
+                <span className="pencil" aria-hidden="true">✎</span>
+                <span className="option-copy">{t.other}</span>
               </label>
               {otherOpen && <textarea autoFocus aria-label={t.otherLabel} maxLength={1000} value={other} onChange={(event) => setOther(event.target.value)} placeholder={t.placeholder} rows={2} />}
             </div>
           )}
         </div>
 
-        {question.recommendationReason && <p className="recommendation-reason"><span>✦</span>{question.recommendationReason}</p>}
+        {(question.why || question.recommendationReason || question.selectionLimitReason) && <details className="why"><summary>{t.details}</summary>{question.why && <p><strong>{t.why}:</strong> {question.why}</p>}{question.recommendationReason && <p><strong>{t.recommended}:</strong> {question.recommendationReason}</p>}{question.selectionLimitReason && <p>{question.selectionLimitReason}</p>}</details>}
         {validationError && validationError !== "too_few_selections" && <p className="selection-hint" role="alert">{t.invalidSelection}: {validationError}</p>}
 
         <footer>
           <span className={`status ${status}`} role="status" aria-live="polite">{status === "sent" ? t.sent : status === "error" ? t.error : ""}</span>
+          {question.allowSkip && <button className="skip" disabled={status === "sending" || status === "sent"} onClick={skip}>{t.skip}</button>}
           <button className="continue" disabled={Boolean(validationError) || status === "sending" || status === "sent"} onClick={submit}>
             {status === "sending" ? t.sending : t.submit}
           </button>
@@ -231,12 +239,12 @@ function App() {
   );
 }
 
-function OptionCopy({ option, recommendedLabel, downsideLabel }: { option: GuidedQuestion["options"][number]; recommendedLabel: string; downsideLabel: string }) {
+function OptionCopy({ option, selected, recommendedLabel, downsideLabel }: { option: GuidedQuestion["options"][number]; selected: boolean; recommendedLabel: string; downsideLabel: string }) {
   return (
     <span className="option-copy">
       <span className="option-heading"><strong>{option.label}</strong>{option.recommended && <span className="badge">{recommendedLabel}</span>}</span>
-      {option.description && <span className="description">{option.description}</span>}
-      {option.downside && <span className="downside"><em>{downsideLabel}:</em> {option.downside}</span>}
+      {selected && option.description && <span className="description">{option.description}</span>}
+      {selected && option.downside && <span className="downside"><em>{downsideLabel}:</em> {option.downside}</span>}
     </span>
   );
 }

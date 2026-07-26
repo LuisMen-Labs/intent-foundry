@@ -35,6 +35,14 @@ describe("validateAnswer", () => {
     const ranked = { ...question, kind: "rank" as const, otherAllowed: false, minSelections: 2, maxSelections: 2 };
     assert.equal(validateAnswer(ranked, { ...answer(), kind: "rank", selected: ["A"] }), "rank_all_options");
   });
+  it("accepts an explicit skip only when the question permits it", () => {
+    const skipped = answer({ selected: [], labels: [], skipped: true });
+    assert.equal(validateAnswer({ ...question, allowSkip: true }, skipped), null);
+    assert.equal(validateAnswer(question, skipped), "skip_not_allowed");
+  });
+  it("rejects a skip mixed with an answer", () => {
+    assert.equal(validateAnswer({ ...question, allowSkip: true }, answer({ skipped: true })), "skip_must_be_empty");
+  });
 });
 
 describe("validateQuestion", () => {
