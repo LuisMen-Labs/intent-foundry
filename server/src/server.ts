@@ -7,8 +7,8 @@ import { z } from "zod";
 import type { GuidedAnswer, GuidedQuestion } from "../../shared/question";
 import { validateAnswer, validateQuestion } from "../../shared/question";
 
-const VERSION = "0.2.0-beta.4";
-const RESOURCE_URI = "ui://intent-foundry/guided-question-v4.html";
+const VERSION = "0.2.0-beta.5";
+const RESOURCE_URI = "ui://intent-foundry/guided-question-v5.html";
 const root = resolve(__dirname, "..");
 const widgetHtml = readFileSync(resolve(root, "mcp/assets/index.html"), "utf8");
 
@@ -83,6 +83,7 @@ function createServer() {
     inputSchema: { question: z.object(questionSchema), answer: answerSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     _meta: {
+      ui: { visibility: ["app"] },
       "openai/toolInvocation/invoking": "Saving answer…",
       "openai/toolInvocation/invoked": "Answer saved",
     },

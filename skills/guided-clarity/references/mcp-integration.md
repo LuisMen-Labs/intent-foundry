@@ -20,6 +20,8 @@ Use this reference whenever `present_guided_question` is available or an incomin
 
 The component should submit through the internal `submit_guided_answer` tool and update model-visible context. Do not use `ui/message` for normal submission: hosts may require a follow-up-message confirmation. Internal submission avoids that dialog, but automatic creation of the next model turn is host-dependent and must be tested honestly.
 
+Treat server acceptance and model-context delivery as separate stages. If server validation succeeds but the context update fails, preserve the accepted answer and retry only the context update. Do not resubmit the same answer to the server merely because the host did not acknowledge the second stage. Deduplicate repeated envelopes by active `questionId` when persisting durable state.
+
 The internal tool returns this envelope in its content and structured result:
 
 ```text

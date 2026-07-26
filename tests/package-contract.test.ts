@@ -34,6 +34,14 @@ describe("Skill and MCP integration contract", () => {
     assert.match(ui, /updateModelContext/);
     assert.doesNotMatch(ui, /sendMessage/);
     assert.match(server, /submit_guided_answer/);
+    assert.match(server, /visibility: \["app"\]/);
+  });
+
+  it("distinguishes server rejection from context-delivery failure", () => {
+    const ui = read("ui/src/main.tsx");
+    assert.match(ui, /server-error/);
+    assert.match(ui, /context-error/);
+    assert.match(ui, /acceptedFingerprint/);
   });
 
   it("keeps the compact, progressive-disclosure response contract", () => {

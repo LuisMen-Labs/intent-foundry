@@ -28,7 +28,7 @@ The differentiation hypothesis adds:
 - explicit permission boundary;
 - portable, reviewable project state.
 
-## Evidence achieved through beta.4
+## Evidence achieved through beta.5
 
 - Single, multi, and rank component paths implemented.
 - `Other`, progress, recommendation, reason, downside, and validation implemented.
@@ -48,7 +48,7 @@ The differentiation hypothesis adds:
 
 ## Evidence still required
 
-- Render and submit beta.4 through the actual Codex/ChatGPT plugin host after reinstall.
+- Render and submit beta.5 through the actual Codex/ChatGPT plugin host after reinstall, including a context-only retry after simulated or observed delivery failure.
 - Revisit/reload test for host widget-state recovery.
 - Keyboard-only and screen-reader audit.
 - Mobile host test.

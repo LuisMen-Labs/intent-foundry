@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { GuidedAnswer, GuidedQuestion } from "../../shared/question";
 import { validateAnswer, validateQuestion } from "../../shared/question";
+import { deliverGuidedAnswer } from "./delivery";
 import "./styles.css";
 
-type Status = "idle" | "sending" | "sent" | "error";
+type Status = "idle" | "sending" | "sent" | "server-error" | "context-error";
 type PersistedState = { questionId: string; selected: string[]; other: string };
 
 declare global {
@@ -19,8 +20,8 @@ declare global {
 }
 
 const copy = {
-  es: { recommended: "Recomendado", other: "Algo más", placeholder: "Escribe lo que encaja mejor…", submit: "Continuar", skip: "Omitir", sending: "Enviando…", sent: "Respuesta enviada", error: "No se pudo enviar. Intenta de nuevo.", invalid: "La pregunta no se pudo mostrar de forma segura.", details: "Ver criterio", why: "Por qué importa", downside: "A tener en cuenta", moveUp: "Subir", moveDown: "Bajar", chooseOne: "Elige una opción", chooseUpTo: "Puedes elegir hasta", chooseAtLeast: "Elige al menos", rank: "Ordena de mayor a menor prioridad", limit: "Límite de selecciones alcanzado", otherLabel: "Escribe otra respuesta", invalidSelection: "La selección necesita una corrección" },
-  en: { recommended: "Recommended", other: "Something else", placeholder: "Write what fits better…", submit: "Continue", skip: "Skip", sending: "Sending…", sent: "Answer sent", error: "Could not send. Try again.", invalid: "The question could not be displayed safely.", details: "View rationale", why: "Why it matters", downside: "Keep in mind", moveUp: "Move up", moveDown: "Move down", chooseOne: "Choose one option", chooseUpTo: "Choose up to", chooseAtLeast: "Choose at least", rank: "Order from highest to lowest priority", limit: "Selection limit reached", otherLabel: "Write another answer", invalidSelection: "The selection needs correction" },
+  es: { recommended: "Recomendado", other: "Algo más", placeholder: "Escribe lo que encaja mejor…", submit: "Continuar", retry: "Reintentar", skip: "Omitir", sending: "Enviando…", sent: "Respuesta enviada", serverError: "No se pudo validar la respuesta. Intenta de nuevo.", contextError: "Respuesta aceptada; falta entregarla al chat. Reintenta.", invalid: "La pregunta no se pudo mostrar de forma segura.", details: "Ver criterio", why: "Por qué importa", downside: "A tener en cuenta", moveUp: "Subir", moveDown: "Bajar", chooseOne: "Elige una opción", chooseUpTo: "Puedes elegir hasta", chooseAtLeast: "Elige al menos", rank: "Ordena de mayor a menor prioridad", limit: "Límite de selecciones alcanzado", otherLabel: "Escribe otra respuesta", invalidSelection: "La selección necesita una corrección" },
+  en: { recommended: "Recommended", other: "Something else", placeholder: "Write what fits better…", submit: "Continue", retry: "Retry", skip: "Skip", sending: "Sending…", sent: "Answer sent", serverError: "The answer could not be validated. Try again.", contextError: "Answer accepted; delivery to the chat is pending. Retry.", invalid: "The question could not be displayed safely.", details: "View rationale", why: "Why it matters", downside: "Keep in mind", moveUp: "Move up", moveDown: "Move down", chooseOne: "Choose one option", chooseUpTo: "Choose up to", chooseAtLeast: "Choose at least", rank: "Order from highest to lowest priority", limit: "Selection limit reached", otherLabel: "Write another answer", invalidSelection: "The selection needs correction" },
 };
 
 const previewKind = new URLSearchParams(window.location.search).get("preview");
@@ -49,10 +50,11 @@ function App() {
   const [other, setOther] = useState("");
   const [otherOpen, setOtherOpen] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
+  const [acceptedFingerprint, setAcceptedFingerprint] = useState<string | null>(null);
   const [hostError, setHostError] = useState<string | null>(null);
 
   const { app, error } = useApp({
-    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.4" },
+    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.5" },
     capabilities: {},
     onAppCreated: (created: McpApp) => {
       created.ontoolresult = (result) => {
@@ -74,6 +76,8 @@ function App() {
         }
         setHostError(null);
         setQuestion(next);
+        setAcceptedFingerprint(null);
+        setStatus("idle");
         const saved = window.openai?.widgetState;
         if (saved?.questionId === next.questionId) {
           setSelected(saved.selected);
@@ -146,21 +150,19 @@ function App() {
       window.setTimeout(() => setStatus("sent"), 250);
       return;
     }
-    try {
-      const result = await app!.callServerTool({
+    const fingerprint = JSON.stringify(nextAnswer);
+    const result = await deliverGuidedAnswer({
+      submit: () => app!.callServerTool({
         name: "submit_guided_answer",
         arguments: { question, answer: nextAnswer },
-      });
-      if (!result.isError) {
-        await app!.updateModelContext({
-          content: [{ type: "text", text: `intent_foundry_answer_v1\n${JSON.stringify(nextAnswer)}` }],
-          structuredContent: { marker: "intent_foundry_answer_v1", answer: nextAnswer },
-        });
-      }
-      setStatus(result.isError ? "error" : "sent");
-    } catch {
-      setStatus("error");
-    }
+      }),
+      updateContext: () => app!.updateModelContext({
+        content: [{ type: "text", text: `intent_foundry_answer_v1\n${JSON.stringify(nextAnswer)}` }],
+        structuredContent: { marker: "intent_foundry_answer_v1", answer: nextAnswer },
+      }),
+    }, acceptedFingerprint === fingerprint);
+    if (result.serverAccepted) setAcceptedFingerprint(fingerprint);
+    setStatus(result.status);
   };
 
   const submit = async () => {
@@ -228,10 +230,10 @@ function App() {
         {validationError && validationError !== "too_few_selections" && <p className="selection-hint" role="alert">{t.invalidSelection}: {validationError}</p>}
 
         <footer>
-          <span className={`status ${status}`} role="status" aria-live="polite">{status === "sent" ? t.sent : status === "error" ? t.error : ""}</span>
+          <span className={`status ${status}`} role="status" aria-live="polite">{status === "sent" ? t.sent : status === "server-error" ? t.serverError : status === "context-error" ? t.contextError : ""}</span>
           {question.allowSkip && <button className="skip" disabled={status === "sending" || status === "sent"} onClick={skip}>{t.skip}</button>}
           <button className="continue" disabled={Boolean(validationError) || status === "sending" || status === "sent"} onClick={submit}>
-            {status === "sending" ? t.sending : t.submit}
+            {status === "sending" ? t.sending : status === "server-error" || status === "context-error" ? t.retry : t.submit}
           </button>
         </footer>
       </section>
