@@ -38,7 +38,7 @@ Advance in the same widget without a new chat turn
 Finalize and retrieve one validated session snapshot
 ```
 
-The final card states how to resume when the host does not start a model turn automatically: return to the chat and type `Continue`. This is a user instruction, not an app-generated chat message; the widget never calls a follow-up-message channel.
+The final card gives the user a purposeful next action when the host does not start a model turn automatically: return to the chat and type `Review answers`. This asks the AI to retrieve and verify the completed session before continuing. It is a user instruction, not an app-generated chat message; the widget never calls a follow-up-message channel.
 
 Adaptive branches remain separate sequences because a widget must not precompute a question whose premise depends on an earlier answer.
 

@@ -85,8 +85,8 @@ describe("Skill and MCP integration contract", () => {
 
   it("ends with an honest user action when the host does not resume automatically", () => {
     const ui = read("ui/src/main.tsx");
-    assert.match(ui, /Si el chat no continúa automáticamente/);
-    assert.match(ui, /escribe «Continuar»/);
+    assert.match(ui, /Para verificarlas y continuar con el proceso/);
+    assert.match(ui, /escribe «Verificar respuestas»/);
     assert.doesNotMatch(ui, /sendFollowUpMessage/);
     assert.doesNotMatch(ui, /ui\/message/);
   });

@@ -182,7 +182,7 @@ try {
     await restartedClient.close();
   }
 
-  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-session-v10.html" });
+  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-session-v11.html" });
   assert(resource.contents[0].text.includes("Intent Foundry"));
   process.stdout.write("MCP smoke test passed\n");
 } finally {
