@@ -31,10 +31,10 @@ Example prompts:
 Ask Codex:
 
 ```text
-Use $skill-installer to install https://github.com/LuisMen-Labs/intent-foundry/tree/v0.2.0/skills/guided-clarity
+Use $skill-installer to install https://github.com/LuisMen-Labs/intent-foundry/tree/v0.1.1/skills/guided-clarity
 ```
 
-Or install with the official Skill installer script available in your Codex environment, using repository `LuisMen-Labs/intent-foundry`, path `skills/guided-clarity`, and ref `v0.2.0`.
+Or install with the official Skill installer script available in your Codex environment, using repository `LuisMen-Labs/intent-foundry`, path `skills/guided-clarity`, and ref `v0.1.1`.
 
 For a repository-scoped installation, copy `skills/guided-clarity` to `<your-repository>/.agents/skills/guided-clarity`. Restart Codex if the Skill does not appear immediately.
 
@@ -50,12 +50,12 @@ The repository can be shared now for source installation. One-click discovery in
 
 Platform-ready downloads and exact installation paths are documented in [docs/INSTALLATION.md](docs/INSTALLATION.md).
 
-- [Gemini-ready ZIP](https://github.com/LuisMen-Labs/intent-foundry/releases/download/v0.2.0/guided-clarity-gemini-v0.2.0.zip)
-- [Claude-ready ZIP](https://github.com/LuisMen-Labs/intent-foundry/releases/download/v0.2.0/guided-clarity-claude-v0.2.0.zip)
+- [Gemini-ready ZIP](https://github.com/LuisMen-Labs/intent-foundry/releases/download/v0.1.1/guided-clarity-gemini-v0.1.1.zip)
+- [Claude-ready ZIP](https://github.com/LuisMen-Labs/intent-foundry/releases/download/v0.1.1/guided-clarity-claude-v0.1.1.zip)
 
 ## Status
 
-Version `0.2.0` is an evidence-seeking public preview. It makes guided, low-friction choices the default and keeps free writing as an escape. Adoption, effectiveness, and recommendation quality remain hypotheses to test, not established claims.
+Version `0.1.1` is an evidence-seeking public preview. It makes guided, low-friction choices the default and keeps free writing as an escape. Adoption, effectiveness, and recommendation quality remain hypotheses to test, not established claims.
 
 The integrated product hypothesis and its acceptance tests are documented in [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
 The runtime loop and package boundaries are documented in [docs/FLOW.md](docs/FLOW.md).

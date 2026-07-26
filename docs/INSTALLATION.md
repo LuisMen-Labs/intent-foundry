@@ -1,6 +1,6 @@
 # Installation and sharing
 
-Use release `v0.2.0` for a reproducible installation.
+Use release `v0.1.1` for a reproducible installation.
 
 ## Message you can share
 
@@ -26,7 +26,7 @@ Mensaje en español:
 
 Requirements and availability depend on account, subscription, region, and Gemini Spark access.
 
-1. Download [guided-clarity-gemini-v0.2.0.zip](https://github.com/LuisMen-Labs/intent-foundry/releases/download/v0.2.0/guided-clarity-gemini-v0.2.0.zip).
+1. Download [guided-clarity-gemini-v0.1.1.zip](https://github.com/LuisMen-Labs/intent-foundry/releases/download/v0.1.1/guided-clarity-gemini-v0.1.1.zip).
 2. Open `gemini.google.com`.
 3. Switch to **Spark**, then open **Skills**.
 4. Select **Upload** and choose the ZIP.
@@ -56,7 +56,7 @@ Official codelab: https://codelabs.developers.google.com/gemini-cli/how-to-creat
 
 ## Claude web or desktop
 
-1. Download [guided-clarity-claude-v0.2.0.zip](https://github.com/LuisMen-Labs/intent-foundry/releases/download/v0.2.0/guided-clarity-claude-v0.2.0.zip).
+1. Download [guided-clarity-claude-v0.1.1.zip](https://github.com/LuisMen-Labs/intent-foundry/releases/download/v0.1.1/guided-clarity-claude-v0.1.1.zip).
 2. Enable **Code execution and file creation** in Claude settings when required.
 3. Open **Customize → Skills**.
 4. Select **+ → Create skill → Upload a skill**.
