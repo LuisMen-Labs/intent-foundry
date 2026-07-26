@@ -7,12 +7,19 @@ Use these gates to keep Guided Clarity from degrading into a generic questionnai
 - The answer is not already confirmed.
 - The answer can change a decision, constraint, risk, or next action.
 - This is the highest-value unresolved question available.
-- The response format reduces effort without restricting the user's meaning.
+- Guided choices are the default; a primary open response has a concrete reason.
+- Single-choice options are mutually exclusive; multiple-choice options are independently selectable.
+- Two to four options cover the materially different paths without cosmetic duplication.
+- A native selector is used when available, and a written `Other` path is always available.
+- The question, tradeoffs, and recommendation rationale are understandable on one phone screen whenever the subject permits it.
+- The user can normally answer in under 30 seconds.
 
 ## Before recommending
 
 - The user's relevant priorities or decision criteria are confirmed.
 - Evidence is sufficient for a recommendation; otherwise present tradeoffs only.
+- When evidence and confirmed criteria are sufficient, one recommendation is visibly marked; omitting it is a failure.
+- When evidence is insufficient, the missing fact is named; inventing a recommendation is a failure.
 - The recommended option includes its material downside.
 - The rationale is separate from the localized `(Recommended)` or `(Recomendado)` label.
 - The recommendation remains an AI proposal until the user confirms it.

@@ -8,6 +8,7 @@
 4. “Audit this product brief for missing decisions and contradictions.”
 5. “I need to continue this project in another AI. Build a portable handoff by interviewing me.”
 6. “Hazme una pregunta por turno y marca tu opción sugerida como (Recomendado).”
+7. “No quiero redactar respuestas largas. Guíame con opciones y déjame escribir solo si ninguna encaja.”
 
 ## Negative cases
 
@@ -31,3 +32,9 @@
 - A resumed session must preserve rejected alternatives and their reasons.
 - A simple direct request must not trigger an unnecessary interview.
 - Spanish interaction must use `(Recomendado)`; English interaction must use `(Recommended)`.
+- A requirements or decision question must default to two to four guided options, not a bare open prompt.
+- Every guided question must preserve a written `Other` path, including when a native selector is used.
+- If criteria and evidence distinguish an option, the localized recommendation label must be visible with a separate reason and downside.
+- If they do not, the response must name the missing evidence instead of silently omitting or inventing a recommendation.
+- A single-choice set must be mutually exclusive; a multiple-choice set must explicitly permit combinations.
+- A normal guided question should be answerable in under 30 seconds and fit on one phone screen when the subject permits it.

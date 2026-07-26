@@ -7,48 +7,52 @@ description: Turn vague ideas, complex choices, incomplete requirements, and unc
 
 Help the user understand and express what they mean before an AI acts. Treat the interview as the mechanism and a verified, portable Intent Pack as the result.
 
-## Start
+## Run the flow
 
 1. Read relevant conversation and project context before asking anything.
 2. Do not repeat facts the user already confirmed.
 3. Select one mode from [modes.md](references/modes.md): Discover, Decide, Challenge, or Audit. Combine modes only when the task requires it.
 4. If filesystem access exists, reuse the project's state file or copy [INTERVIEW_STATE.template.md](assets/INTERVIEW_STATE.template.md). Otherwise maintain a compact state in the conversation.
-5. State the purpose briefly and ask the single highest-value unresolved question.
-6. Match the user's language. Keep state and the final Intent Pack in that language unless the user requests another one.
-7. Prefer immediate value over interview length. Stop asking when the remaining unknowns do not materially change the requested decision or action.
+5. Prepare the single highest-value unresolved question using [question-design.md](references/question-design.md).
+6. Present guided choices, capture the user's selection or correction, then classify it as Confirmed, Inferred, or Unknown.
+7. Persist the answer before preparing the next question. Never record the AI's recommendation as the user's decision.
+8. Adapt the next question to the new state, switch modes when justified, or stop when remaining unknowns are immaterial.
+9. Match the user's language. Keep state and the final Intent Pack in that language unless the user requests another one.
 
-## Ask one question per turn
+## Make every question easy to answer
 
-- Explain in one sentence why the answer changes the result.
-- Use the response format that minimizes user effort without hiding relevant choices:
-  - **Single choice:** mutually exclusive alternatives.
-  - **Multiple choice:** independent alternatives that may be combined.
-  - **Free response:** when predefined alternatives would constrain the user's meaning.
-- Use the platform's native single-choice or multi-choice control when it is available and appropriate. Otherwise render the choices as plain text and accept letters, labels, combinations, or a written answer.
-- Normally offer two to five concise alternatives. Always permit a written answer that corrects, combines, or replaces them.
-- Include `I don't know yet` when uncertainty is legitimate.
-- Mark at most one single-choice option with the exact localized suffix: ` (Recommended)` in English or ` (Recomendado)` in Spanish. For multiple choice, mark only the suggested combination. Explain the evidence or criterion separately.
-- Never recommend merely to steer the user. When evidence is insufficient, show tradeoffs without a recommendation.
-- Adapt the next question to the last confirmed answer. Do not dump the full questionnaire unless asked.
+- Ask exactly one question per turn unless the user requests a batch.
+- Begin with a brief progress cue: what is already clear and what this answer unlocks.
+- Default to guided choices. Use free response as the primary format only when proposed options would materially bias or truncate the user's meaning.
+- Use the platform's native single-choice or multi-choice control whenever available. If the control supplies an `Other` field, rely on it; otherwise include a free-write escape.
+- Keep the question phone-friendly: two to four materially distinct choices, one-line tradeoffs, plain language, and no jargon dump.
+- Always let the user write an answer that corrects, combines, or replaces the choices. Include `I don't know yet` when uncertainty is legitimate.
+- For single choice, make alternatives mutually exclusive. For multiple choice, label it clearly and make alternatives independently selectable.
+- When evidence and confirmed criteria support a preference, **must** mark exactly one option or one combination with the localized suffix ` (Recommended)` or ` (Recomendado)`. Put the rationale and material downside outside the label.
+- When evidence is insufficient, do not manufacture a recommendation. Say what fact is missing and offer a low-effort path to resolve it.
+- Treat every recommendation as a proposal until the user explicitly selects or confirms it.
+- If host policy forbids textual choices and no native selector exists, state the interface limitation briefly and ask the smallest possible free response. Do not pretend choices were shown.
 - Choose for information gain: ask what most reduces consequential uncertainty, not what is easiest to ask.
 
-Use this compact pattern:
+Use this compact fallback only when the host permits textual choices:
 
 ```text
-Question N — Topic
+Question N · Topic
+Already clear: short progress cue.
 Why it matters: concrete consequence.
-Choose one / Choose any that apply:
+Choose one / Choose any:
 A. Option — tradeoff
 B. Option — tradeoff (Recommended)
 C. I don't know yet — what would help decide
 
-Why B: evidence or decision criterion.
-Your own answer is always welcome.
+Why B: evidence or decision criterion. Downside: material cost or risk.
+Other answer: write what fits better.
 ```
 
 ## Verify rather than fill gaps
 
 - Classify material information as **Confirmed**, **Inferred**, or **Unknown**.
+- Interpret a selected label, letter, combination, or custom answer without forcing it into a predefined option. Ask a short confirmation only when ambiguity would materially change the result.
 - Reopen a prior answer only when new context creates a material contradiction.
 - For consequential decisions, test what must be true, what would falsify it, which incentives may distort it, and what downside is hidden by vague language or averages.
 - Separate evidence from inference. Research current or high-impact claims before using them as premises.

@@ -6,8 +6,8 @@ Intent Foundry must preserve this combination. Individual features are not claim
 |---|---|---|
 | Cross-domain clarification | Discover, Decide, Challenge, and Audit modes | Positive cases cover products, vendors, investment theses, briefs, and handoffs |
 | Adaptive dialogue | One highest-value unresolved question per turn | Test that the next question changes after each answer |
-| Low-friction input | Native controls when available; single, multiple, and free-text fallback | Test letters, labels, combinations, and custom prose |
-| Transparent recommendation | Localized recommendation label, separate rationale, downside, and user confirmation | Verify no recommendation is recorded as a decision before confirmation |
+| Low-friction input | Guided choices by default; native controls first; written `Other` always available; open-first only by exception | Test native selection, letters, labels, combinations, custom prose, and an unjustified open prompt |
+| Transparent recommendation | Mandatory localized recommendation when criteria support it; separate rationale, downside, and user confirmation | Verify visible recommendation when justified, explicit missing evidence otherwise, and no confirmation before user choice |
 | Epistemic separation | Confirmed, Inferred, and Unknown sections | Inject an ambiguous answer and verify it remains unresolved |
 | Adversarial reasoning | Contradictions, biases, incentives, assumptions, and falsifiers | Use a high-conviction but weakly evidenced plan |
 | Durable continuity | State updated after every material answer | Pause and resume without rereading the transcript |
@@ -33,3 +33,4 @@ Intent Foundry must preserve this combination. Individual features are not claim
 - successful resume rate in another session/model;
 - repeat use at 7 and 30 days;
 - secret-persistence and unauthorized-action failures, both targeted at zero.
+- median time and abandonment rate per question, segmented by native selector, textual fallback, and open exception.

@@ -3,6 +3,7 @@
 - Topic:
 - Mode: Discover | Decide | Challenge | Audit
 - Status: Active | Paused | Complete
+- Question number:
 - Updated: YYYY-MM-DD
 
 ## Desired outcome
@@ -20,8 +21,14 @@
 
 ## Rejected alternatives
 
+## Decision criteria and recommendation status
+
 ## Contradictions, biases, and falsifiers
 
 ## Permissions and prohibited actions
 
 ## Next question
+
+- Purpose:
+- Format: Single choice | Multiple choice | Open exception
+- Recommendation basis or missing evidence:
