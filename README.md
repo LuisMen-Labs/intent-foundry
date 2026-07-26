@@ -28,7 +28,23 @@ Example prompts:
 
 ## Install from source
 
-Clone the repository and install it using the plugin or Skill installation workflow supported by your Codex environment. The portable Skill is located at `skills/guided-clarity`.
+Ask Codex:
+
+```text
+Use $skill-installer to install https://github.com/LuisMen-Labs/intent-foundry/tree/v0.1.0/skills/guided-clarity
+```
+
+Or install with the official Skill installer script available in your Codex environment, using repository `LuisMen-Labs/intent-foundry`, path `skills/guided-clarity`, and ref `v0.1.0`.
+
+For a repository-scoped installation, copy `skills/guided-clarity` to `<your-repository>/.agents/skills/guided-clarity`. Restart Codex if the Skill does not appear immediately.
+
+Then invoke it explicitly:
+
+```text
+$guided-clarity Help me clarify this decision before acting.
+```
+
+The repository can be shared now for source installation. One-click discovery in the public Plugins Directory remains pending marketplace review.
 
 ## Status
 
