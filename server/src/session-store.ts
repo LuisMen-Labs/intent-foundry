@@ -19,6 +19,7 @@ export interface StoredSession {
   session: GuidedSession;
   answers: GuidedAnswer[];
   finalized: boolean;
+  completedCheckpoints: string[];
   updatedAt: number;
 }
 
@@ -71,10 +72,14 @@ export class FileSessionStore {
     if (!isStoredSession(record, stored.session.sessionId)) {
       throw new Error("Refusing to persist an invalid guided session");
     }
+    const serialized = JSON.stringify(record);
+    if (Buffer.byteLength(serialized, "utf8") > MAX_FILE_BYTES) {
+      throw new Error("Refusing to persist an oversized guided session");
+    }
     mkdirSync(this.rootDir, { recursive: true, mode: 0o700 });
     const target = this.pathFor(stored.session.sessionId);
     const temporary = join(this.rootDir, `.${this.hash(stored.session.sessionId)}.${process.pid}.${this.now()}.tmp`);
-    writeFileSync(temporary, JSON.stringify(record), { encoding: "utf8", mode: 0o600, flag: "wx" });
+    writeFileSync(temporary, serialized, { encoding: "utf8", mode: 0o600, flag: "wx" });
     renameSync(temporary, target);
     this.cleanup();
     return record;
@@ -110,6 +115,9 @@ function isStoredSession(value: unknown, expectedSessionId: string): value is St
   if (!candidate.session || candidate.session.sessionId !== expectedSessionId) return false;
   if (validateSession(candidate.session) !== null) return false;
   if (!Array.isArray(candidate.answers) || typeof candidate.finalized !== "boolean") return false;
+  if (!Array.isArray(candidate.completedCheckpoints)) return false;
+  const validCheckpointIds = new Set((candidate.session.checkpoints ?? []).map((item) => item.checkpointId));
+  if (!candidate.completedCheckpoints.every((id) => typeof id === "string" && validCheckpointIds.has(id))) return false;
   if (typeof candidate.updatedAt !== "number" || !Number.isFinite(candidate.updatedAt)) return false;
   return candidate.answers.every((answer) => validateSessionAnswer(candidate.session!, answer) === null);
 }

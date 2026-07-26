@@ -19,6 +19,7 @@ type PersistedState = {
   drafts: Record<string, Draft>;
   savedIds: string[];
   finalized: boolean;
+  completedCheckpoints: string[];
 };
 
 declare global {
@@ -82,7 +83,7 @@ function App() {
   const [hostError, setHostError] = useState<string | null>(null);
 
   const { app, error } = useApp({
-    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.8" },
+    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.9" },
     capabilities: {},
     onAppCreated: (created: McpApp) => {
       created.ontoolresult = (result) => {
@@ -128,7 +129,7 @@ function App() {
 
   useEffect(() => {
     if (!session) return;
-    window.openai?.setWidgetState?.({ sessionId: session.sessionId, currentIndex, drafts, savedIds, finalized });
+    window.openai?.setWidgetState?.({ sessionId: session.sessionId, currentIndex, drafts, savedIds, finalized, completedCheckpoints: [] });
   }, [session, currentIndex, drafts, savedIds, finalized]);
 
   if ((error || hostError) && !previewSession) return <div className="state error" role="alert">{document.documentElement.lang.startsWith("en") ? copy.en.invalid : copy.es.invalid}</div>;
@@ -233,9 +234,30 @@ function App() {
     return result.serverAccepted;
   };
 
+  const saveCheckpointIfBoundary = async (): Promise<boolean> => {
+    const checkpoint = session.checkpoints?.find((item) => item.throughQuestionId === question.questionId);
+    if (!checkpoint || previewSession) return true;
+    setStatus("sending");
+    try {
+      const result = await app!.callServerTool({
+        name: "checkpoint_guided_session",
+        arguments: { sessionId: session.sessionId, checkpointId: checkpoint.checkpointId },
+      });
+      if (result.isError) {
+        setStatus("server-error");
+        return false;
+      }
+      return true;
+    } catch {
+      setStatus("server-error");
+      return false;
+    }
+  };
+
   const next = async () => {
     if (validationError) return;
     if (await saveAnswer(answer)) {
+      if (!(await saveCheckpointIfBoundary())) return;
       setCurrentIndex((index) => index + 1);
       setStatus("idle");
     }
@@ -254,12 +276,22 @@ function App() {
     ? draft.selected.map((id) => question.options.find((option) => option.id === id)!).filter(Boolean)
     : question.options;
 
+  const globalCurrent = question.progress?.current ?? currentIndex + 1;
+  const globalTotal = question.progress?.total ?? session.questions.length;
+  const blockIndex = session.checkpoints?.findIndex((checkpoint) => {
+    const throughIndex = session.questions.findIndex((candidate) => candidate.questionId === checkpoint.throughQuestionId);
+    return currentIndex <= throughIndex;
+  }) ?? -1;
+  const progressText = session.checkpoints && blockIndex >= 0
+    ? `${locale === "es" ? "Pregunta" : "Question"} ${globalCurrent} de ${globalTotal} · ${locale === "es" ? "Bloque" : "Block"} ${blockIndex + 1} de ${session.checkpoints.length}`
+    : `${globalCurrent} de ${globalTotal}`;
+
   return (
     <main className="shell">
       <section className="card" aria-labelledby="question-title">
         <header className="question-header">
           <h1 id="question-title">{question.question}</h1>
-          <span className="progress-copy" aria-label={question.progress?.label}>{session.questions.length > 1 ? `${currentIndex + 1} de ${session.questions.length}` : (question.progress?.total ? `${question.progress.current} de ${question.progress.total}` : (question.progress?.label || question.progress?.current))}</span>
+          <span className="progress-copy" aria-label={question.progress?.label}>{progressText}</span>
         </header>
 
         <div className="options" role={question.kind === "single" ? "radiogroup" : question.kind === "multi" ? "group" : "list"}>
@@ -289,7 +321,7 @@ function App() {
           <button className="previous" disabled={currentIndex === 0 || status === "sending"} onClick={() => { setCurrentIndex((index) => index - 1); setStatus(savedIds.includes(session.questions[currentIndex - 1].questionId) ? "sent" : "idle"); }}>{t.previous}</button>
           <span className={`status ${status}`} role="status" aria-live="polite">{status === "sent" ? t.sent : status === "server-error" ? t.serverError : ""}</span>
           {question.allowSkip && <button className="skip" disabled={status === "sending"} onClick={skip}>{t.skip}</button>}
-          <button className="finish" disabled={status === "sending"} onClick={async () => { if (!validationError && !savedIds.includes(question.questionId) && !(await saveAnswer(answer))) return; await finalizeSession(); }}>{t.finish}</button>
+          <button className="finish" disabled={status === "sending"} onClick={async () => { if (!validationError && !savedIds.includes(question.questionId) && !(await saveAnswer(answer))) return; if (!(await saveCheckpointIfBoundary())) return; await finalizeSession(); }}>{t.finish}</button>
           <button className="continue" disabled={Boolean(validationError) || status === "sending"} onClick={next}>{status === "sending" ? t.sending : status === "server-error" ? t.retry : t.next}</button>
         </footer>
       </section>

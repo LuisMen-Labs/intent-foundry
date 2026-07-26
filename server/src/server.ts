@@ -7,11 +7,11 @@ import { z } from "zod";
 import type { GuidedAnswer, GuidedQuestion } from "../../shared/question";
 import { validateAnswer, validateQuestion } from "../../shared/question";
 import type { GuidedSession, GuidedSessionSnapshot } from "../../shared/session";
-import { upsertSessionAnswer, validateSession, validateSessionAnswer } from "../../shared/session";
+import { checkpointQuestionIds, upsertSessionAnswer, validateSession, validateSessionAnswer } from "../../shared/session";
 import { FileSessionStore, type StoredSession } from "./session-store";
 
-const VERSION = "0.2.0-beta.8";
-const RESOURCE_URI = "ui://intent-foundry/guided-session-v8.html";
+const VERSION = "0.2.0-beta.9";
+const RESOURCE_URI = "ui://intent-foundry/guided-session-v9.html";
 const root = resolve(__dirname, "..");
 const widgetHtml = readFileSync(resolve(root, "mcp/assets/index.html"), "utf8");
 
@@ -51,7 +51,12 @@ const answerSchema = z.object({
 const rawQuestionSchema = z.object(questionSchema);
 const guidedSessionSchema = {
   sessionId: z.string().min(1).max(80),
-  questions: z.array(rawQuestionSchema).min(1).max(8),
+  questions: z.array(rawQuestionSchema).min(1).max(32),
+  checkpoints: z.array(z.object({
+    checkpointId: z.string().min(1).max(80),
+    throughQuestionId: z.string().min(1).max(80),
+    label: z.string().max(80).optional(),
+  })).min(1).max(16).optional(),
 };
 
 type RawQuestion = z.infer<typeof rawQuestionSchema>;
@@ -71,6 +76,7 @@ function snapshot(stored: StoredSession): GuidedSessionSnapshot {
     sessionId: stored.session.sessionId,
     answers: stored.answers,
     finalized: stored.finalized,
+    completedCheckpoints: stored.completedCheckpoints,
   };
 }
 
@@ -85,6 +91,8 @@ function createServer() {
       session,
       answers: (prior?.answers ?? []).filter((answer) => questionIds.has(answer.questionId)),
       finalized: false,
+      completedCheckpoints: (prior?.completedCheckpoints ?? []).filter((checkpointId) =>
+        session.checkpoints?.some((checkpoint) => checkpoint.checkpointId === checkpointId)),
     });
   };
 
@@ -113,7 +121,7 @@ function createServer() {
 
   registerAppTool(server, "present_guided_sequence", {
     title: "Present a guided question sequence",
-    description: "Present a short navigable microsequence when every queued question remains valid regardless of earlier selections. Use a new sequence after a material branch. The card provides Previous, Next, Finish, revision by questionId, and an internal answer queue. Do not use this tool to hide dependent branches inside a fixed questionnaire.",
+    description: "Present a navigable sequence when every queued question remains valid regardless of earlier selections. For a longer predetermined review, include ordered checkpoints so the card validates and saves each block before advancing while showing global question and block progress. Use a new sequence after a material branch. Do not hide dependent branches inside a fixed questionnaire.",
     inputSchema: guidedSessionSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     _meta: {
@@ -121,11 +129,12 @@ function createServer() {
       "openai/toolInvocation/invoking": "Preparing a guided sequence…",
       "openai/toolInvocation/invoked": "Sequence ready",
     },
-  }, async ({ sessionId, questions: rawQuestions }) => {
+  }, async ({ sessionId, questions: rawQuestions, checkpoints }) => {
     const session: GuidedSession = {
       marker: "intent_foundry_session_v1",
       sessionId,
       questions: rawQuestions.map(normalizeQuestion),
+      ...(checkpoints ? { checkpoints } : {}),
     };
     const validationError = validateSession(session);
     if (validationError) {
@@ -202,6 +211,35 @@ function createServer() {
     const stored = sessions.get(sessionId);
     if (!stored) return { isError: true, content: [{ type: "text" as const, text: "Unknown or expired guided session" }] };
     stored.finalized = true;
+    sessions.put(stored);
+    const state = snapshot(stored);
+    return {
+      content: [{ type: "text" as const, text: `intent_foundry_session_state_v1\n${JSON.stringify(state)}` }],
+      structuredContent: state as unknown as Record<string, unknown>,
+    };
+  });
+
+  server.registerTool("checkpoint_guided_session", {
+    title: "Checkpoint a guided session block",
+    description: "Verify that every question in the requested block has a stored answer before allowing the Intent Foundry card to advance. Internal UI transport only.",
+    inputSchema: { sessionId: z.string().min(1).max(80), checkpointId: z.string().min(1).max(80) },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    _meta: {
+      ui: { visibility: ["app"] },
+      "openai/toolInvocation/invoking": "Saving checkpoint…",
+      "openai/toolInvocation/invoked": "Checkpoint saved",
+    },
+  }, async ({ sessionId, checkpointId }) => {
+    const stored = sessions.get(sessionId);
+    if (!stored) return { isError: true, content: [{ type: "text" as const, text: "Unknown or expired guided session" }] };
+    if (stored.finalized) return { isError: true, content: [{ type: "text" as const, text: "Guided session is finalized" }] };
+    const requiredIds = checkpointQuestionIds(stored.session, checkpointId);
+    if (!requiredIds) return { isError: true, content: [{ type: "text" as const, text: "Unknown guided checkpoint" }] };
+    const answeredIds = new Set(stored.answers.map((answer) => answer.questionId));
+    if (!requiredIds.every((questionId) => answeredIds.has(questionId))) {
+      return { isError: true, content: [{ type: "text" as const, text: "Guided checkpoint is incomplete" }] };
+    }
+    stored.completedCheckpoints = Array.from(new Set([...stored.completedCheckpoints, checkpointId]));
     sessions.put(stored);
     const state = snapshot(stored);
     return {

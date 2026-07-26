@@ -18,11 +18,13 @@ Use this reference whenever a Guided Clarity MCP tool is available or an incomin
 
 ## Present a navigable microsequence
 
-Use `present_guided_sequence` for two to four questions only when each later question remains valid under every possible earlier answer. Give the block a stable `sessionId`; preserve stable `questionId` values inside it. A decision that changes the next question's premise, options, recommendation, or safety boundary ends the block.
+Use `present_guided_sequence` for two to four questions when each later question remains valid under every possible earlier answer. Give the sequence a stable `sessionId`; preserve stable `questionId` values inside it. A decision that changes the next question's premise, options, recommendation, or safety boundary ends the sequence.
+
+For a predetermined audit or review with a known finite set, the tool may receive the full independent sequence plus ordered `checkpoints`. Each checkpoint names the last question in its block. The card must save the current answer, ask the server to verify that every question in the block has a validated stored answer, and advance immediately only after that checkpoint succeeds. Show global progress, for example `Question 11 of 23 · Block 3 of 6`; never reset the visible counter to `1 of 4` at each block. This mode removes the need for a user chat message between blocks, but it does not make dependent questions safe to precompute.
 
 The card owns `Previous`, `Next`, and `Finish`. `Next` validates and upserts the current answer before advancing. `Previous` restores the saved draft, and a revision replaces the earlier answer with the same `questionId`. `Finish` closes the block without manufacturing answers for untouched questions.
 
-On the next normal user turn, call `read_guided_session` with the known `sessionId` before asking another question. Validate the returned questions and answers, persist Confirmed and Unknown state, then prepare a new adaptive block. The MCP server keeps at most 20 validated sessions for up to 24 hours in the operating system's local temporary directory so app and model calls may cross process boundaries. This queue is not durable project memory, is not synchronized across devices, and must never contain secrets.
+On the next normal user turn after a short adaptive sequence, call `read_guided_session` with the known `sessionId` before asking another question. For a checkpointed review, retrieve once after the final screen or when the user pauses; the server has already validated each completed block. Validate the returned questions and answers before durable persistence. The MCP server keeps at most 20 validated sessions for up to 24 hours in the operating system's local temporary directory so app and model calls may cross process boundaries. This queue is not durable project memory, is not synchronized across devices, and must never contain secrets.
 
 ## Consume the answer
 

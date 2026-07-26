@@ -37,7 +37,7 @@ const answer: GuidedAnswer = {
 
 describe("file session store", () => {
   it("restores a validated session from a new store instance", () => {
-    new FileSessionStore(testRoot).put({ session, answers: [answer], finalized: true });
+    new FileSessionStore(testRoot).put({ session, answers: [answer], finalized: true, completedCheckpoints: [] });
 
     const restored = new FileSessionStore(testRoot).get(session.sessionId);
     assert.equal(restored?.finalized, true);
@@ -49,7 +49,7 @@ describe("file session store", () => {
     let now = 1_000;
     const expiringRoot = join(testRoot, "expiring");
     const writer = new FileSessionStore(expiringRoot, 20, 100, () => now);
-    writer.put({ session: { ...session, sessionId: "expires" }, answers: [], finalized: false });
+    writer.put({ session: { ...session, sessionId: "expires" }, answers: [], finalized: false, completedCheckpoints: [] });
     now = 1_101;
 
     assert.equal(new FileSessionStore(expiringRoot, 20, 100, () => now).get("expires"), null);

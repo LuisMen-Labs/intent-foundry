@@ -28400,16 +28400,41 @@ function validateAnswer(question, answer) {
 }
 
 // shared/session.ts
+var MAX_SESSION_BYTES = 128 * 1024;
 function validateSession(session) {
   if (!session.sessionId.trim()) return "missing_session_id";
-  if (session.questions.length < 1 || session.questions.length > 8) return "invalid_question_count";
+  if (session.questions.length < 1 || session.questions.length > 32) return "invalid_question_count";
+  if (new TextEncoder().encode(JSON.stringify(session)).byteLength > MAX_SESSION_BYTES) return "session_too_large";
   const ids = session.questions.map((question) => question.questionId);
   if (new Set(ids).size !== ids.length) return "duplicate_question_id";
   for (const question of session.questions) {
     const error40 = validateQuestion(question);
     if (error40) return `invalid_question:${question.questionId}:${error40}`;
   }
+  if (session.checkpoints) {
+    if (session.checkpoints.length < 1 || session.checkpoints.length > 16) return "invalid_checkpoint_count";
+    const checkpointIds = session.checkpoints.map((checkpoint) => checkpoint.checkpointId);
+    if (new Set(checkpointIds).size !== checkpointIds.length) return "duplicate_checkpoint_id";
+    let previousIndex = -1;
+    for (const checkpoint of session.checkpoints) {
+      if (!checkpoint.checkpointId.trim()) return "missing_checkpoint_id";
+      const index = ids.indexOf(checkpoint.throughQuestionId);
+      if (index < 0) return "checkpoint_question_not_in_session";
+      if (index <= previousIndex) return "checkpoints_not_in_order";
+      previousIndex = index;
+    }
+    if (previousIndex !== session.questions.length - 1) return "checkpoint_must_end_session";
+  }
   return null;
+}
+function checkpointQuestionIds(session, checkpointId) {
+  const checkpoints = session.checkpoints ?? [];
+  const checkpointIndex = checkpoints.findIndex((item) => item.checkpointId === checkpointId);
+  if (checkpointIndex < 0) return null;
+  const questionIds = session.questions.map((question) => question.questionId);
+  const start = checkpointIndex === 0 ? 0 : questionIds.indexOf(checkpoints[checkpointIndex - 1].throughQuestionId) + 1;
+  const end = questionIds.indexOf(checkpoints[checkpointIndex].throughQuestionId) + 1;
+  return questionIds.slice(start, end);
 }
 function validateSessionAnswer(session, answer) {
   const sessionError = validateSession(session);
@@ -28471,10 +28496,14 @@ var FileSessionStore = class {
     if (!isStoredSession(record2, stored.session.sessionId)) {
       throw new Error("Refusing to persist an invalid guided session");
     }
+    const serialized = JSON.stringify(record2);
+    if (Buffer.byteLength(serialized, "utf8") > MAX_FILE_BYTES) {
+      throw new Error("Refusing to persist an oversized guided session");
+    }
     (0, import_node_fs.mkdirSync)(this.rootDir, { recursive: true, mode: 448 });
     const target = this.pathFor(stored.session.sessionId);
     const temporary = (0, import_node_path.join)(this.rootDir, `.${this.hash(stored.session.sessionId)}.${process.pid}.${this.now()}.tmp`);
-    (0, import_node_fs.writeFileSync)(temporary, JSON.stringify(record2), { encoding: "utf8", mode: 384, flag: "wx" });
+    (0, import_node_fs.writeFileSync)(temporary, serialized, { encoding: "utf8", mode: 384, flag: "wx" });
     (0, import_node_fs.renameSync)(temporary, target);
     this.cleanup();
     return record2;
@@ -28502,6 +28531,9 @@ function isStoredSession(value, expectedSessionId) {
   if (!candidate.session || candidate.session.sessionId !== expectedSessionId) return false;
   if (validateSession(candidate.session) !== null) return false;
   if (!Array.isArray(candidate.answers) || typeof candidate.finalized !== "boolean") return false;
+  if (!Array.isArray(candidate.completedCheckpoints)) return false;
+  const validCheckpointIds = new Set((candidate.session.checkpoints ?? []).map((item) => item.checkpointId));
+  if (!candidate.completedCheckpoints.every((id) => typeof id === "string" && validCheckpointIds.has(id))) return false;
   if (typeof candidate.updatedAt !== "number" || !Number.isFinite(candidate.updatedAt)) return false;
   return candidate.answers.every((answer) => validateSessionAnswer(candidate.session, answer) === null);
 }
@@ -28510,8 +28542,8 @@ function isMissing(error40) {
 }
 
 // server/src/server.ts
-var VERSION = "0.2.0-beta.8";
-var RESOURCE_URI = "ui://intent-foundry/guided-session-v8.html";
+var VERSION = "0.2.0-beta.9";
+var RESOURCE_URI = "ui://intent-foundry/guided-session-v9.html";
 var root = (0, import_node_path2.resolve)(__dirname, "..");
 var widgetHtml = (0, import_node_fs2.readFileSync)((0, import_node_path2.resolve)(root, "mcp/assets/index.html"), "utf8");
 var optionSchema = external_exports.object({
@@ -28547,7 +28579,12 @@ var answerSchema = external_exports.object({
 var rawQuestionSchema = external_exports.object(questionSchema);
 var guidedSessionSchema = {
   sessionId: external_exports.string().min(1).max(80),
-  questions: external_exports.array(rawQuestionSchema).min(1).max(8)
+  questions: external_exports.array(rawQuestionSchema).min(1).max(32),
+  checkpoints: external_exports.array(external_exports.object({
+    checkpointId: external_exports.string().min(1).max(80),
+    throughQuestionId: external_exports.string().min(1).max(80),
+    label: external_exports.string().max(80).optional()
+  })).min(1).max(16).optional()
 };
 function normalizeQuestion(input) {
   return {
@@ -28563,7 +28600,8 @@ function snapshot(stored) {
     marker: "intent_foundry_session_state_v1",
     sessionId: stored.session.sessionId,
     answers: stored.answers,
-    finalized: stored.finalized
+    finalized: stored.finalized,
+    completedCheckpoints: stored.completedCheckpoints
   };
 }
 function createServer() {
@@ -28575,7 +28613,8 @@ function createServer() {
     sessions.put({
       session,
       answers: (prior?.answers ?? []).filter((answer) => questionIds.has(answer.questionId)),
-      finalized: false
+      finalized: false,
+      completedCheckpoints: (prior?.completedCheckpoints ?? []).filter((checkpointId) => session.checkpoints?.some((checkpoint) => checkpoint.checkpointId === checkpointId))
     });
   };
   K3(server, "present_guided_question", {
@@ -28601,7 +28640,7 @@ function createServer() {
   });
   K3(server, "present_guided_sequence", {
     title: "Present a guided question sequence",
-    description: "Present a short navigable microsequence when every queued question remains valid regardless of earlier selections. Use a new sequence after a material branch. The card provides Previous, Next, Finish, revision by questionId, and an internal answer queue. Do not use this tool to hide dependent branches inside a fixed questionnaire.",
+    description: "Present a navigable sequence when every queued question remains valid regardless of earlier selections. For a longer predetermined review, include ordered checkpoints so the card validates and saves each block before advancing while showing global question and block progress. Use a new sequence after a material branch. Do not hide dependent branches inside a fixed questionnaire.",
     inputSchema: guidedSessionSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     _meta: {
@@ -28609,11 +28648,12 @@ function createServer() {
       "openai/toolInvocation/invoking": "Preparing a guided sequence\u2026",
       "openai/toolInvocation/invoked": "Sequence ready"
     }
-  }, async ({ sessionId, questions: rawQuestions }) => {
+  }, async ({ sessionId, questions: rawQuestions, checkpoints }) => {
     const session = {
       marker: "intent_foundry_session_v1",
       sessionId,
-      questions: rawQuestions.map(normalizeQuestion)
+      questions: rawQuestions.map(normalizeQuestion),
+      ...checkpoints ? { checkpoints } : {}
     };
     const validationError = validateSession(session);
     if (validationError) {
@@ -28689,6 +28729,35 @@ ${JSON.stringify(state)}` }],
     const stored = sessions.get(sessionId);
     if (!stored) return { isError: true, content: [{ type: "text", text: "Unknown or expired guided session" }] };
     stored.finalized = true;
+    sessions.put(stored);
+    const state = snapshot(stored);
+    return {
+      content: [{ type: "text", text: `intent_foundry_session_state_v1
+${JSON.stringify(state)}` }],
+      structuredContent: state
+    };
+  });
+  server.registerTool("checkpoint_guided_session", {
+    title: "Checkpoint a guided session block",
+    description: "Verify that every question in the requested block has a stored answer before allowing the Intent Foundry card to advance. Internal UI transport only.",
+    inputSchema: { sessionId: external_exports.string().min(1).max(80), checkpointId: external_exports.string().min(1).max(80) },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    _meta: {
+      ui: { visibility: ["app"] },
+      "openai/toolInvocation/invoking": "Saving checkpoint\u2026",
+      "openai/toolInvocation/invoked": "Checkpoint saved"
+    }
+  }, async ({ sessionId, checkpointId }) => {
+    const stored = sessions.get(sessionId);
+    if (!stored) return { isError: true, content: [{ type: "text", text: "Unknown or expired guided session" }] };
+    if (stored.finalized) return { isError: true, content: [{ type: "text", text: "Guided session is finalized" }] };
+    const requiredIds = checkpointQuestionIds(stored.session, checkpointId);
+    if (!requiredIds) return { isError: true, content: [{ type: "text", text: "Unknown guided checkpoint" }] };
+    const answeredIds = new Set(stored.answers.map((answer) => answer.questionId));
+    if (!requiredIds.every((questionId) => answeredIds.has(questionId))) {
+      return { isError: true, content: [{ type: "text", text: "Guided checkpoint is incomplete" }] };
+    }
+    stored.completedCheckpoints = Array.from(/* @__PURE__ */ new Set([...stored.completedCheckpoints, checkpointId]));
     sessions.put(stored);
     const state = snapshot(stored);
     return {

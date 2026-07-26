@@ -70,6 +70,19 @@ describe("Skill and MCP integration contract", () => {
     assert.doesNotMatch(ui, /updateModelContext/);
   });
 
+  it("supports continuous checkpointed reviews with global progress", () => {
+    const ui = read("ui/src/main.tsx");
+    const server = read("server/src/server.ts");
+    const integration = read("skills/guided-clarity/references/mcp-integration.md");
+    assert.match(ui, /checkpoint_guided_session/);
+    assert.match(ui, /Pregunta/);
+    assert.match(ui, /Bloque/);
+    assert.match(server, /checkpointQuestionIds/);
+    assert.match(server, /Guided checkpoint is incomplete/);
+    assert.match(integration, /ordered `checkpoints`/);
+    assert.match(integration, /Question 11 of 23/);
+  });
+
   it("persists only a bounded temporary queue across MCP processes", () => {
     const store = read("server/src/session-store.ts");
     const integration = read("skills/guided-clarity/references/mcp-integration.md");
