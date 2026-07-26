@@ -13,7 +13,7 @@ Help the user understand and express what they mean before an AI acts. Treat the
 2. Do not repeat facts the user already confirmed.
 3. Select one mode from [modes.md](references/modes.md): Discover, Decide, Challenge, or Audit. Combine modes only when the task requires it.
 4. If filesystem access exists, reuse the project's state file or copy [INTERVIEW_STATE.template.md](assets/INTERVIEW_STATE.template.md). Otherwise maintain a compact state in the conversation.
-5. Prepare the single highest-value unresolved question using [question-design.md](references/question-design.md).
+5. Prepare the single highest-value unresolved question using [question-design.md](references/question-design.md). Apply [coaching-quality.md](references/coaching-quality.md) whenever the question concerns goals, beliefs, tradeoffs, risk, commitment, or a consequential decision.
 6. Present guided choices through `present_guided_question` whenever that MCP tool is available. Follow [mcp-integration.md](references/mcp-integration.md) for the exact handoff and answer contract.
 7. Capture the user's selection or correction, then classify it as Confirmed, Inferred, or Unknown.
 8. Persist the answer before preparing the next question. Never record the AI's recommendation as the user's decision.
@@ -29,7 +29,10 @@ Help the user understand and express what they mean before an AI acts. Treat the
 - Treat `present_guided_question` as the native control for this plugin. If it is callable, use it instead of printing simulated options in prose.
 - Keep the question phone-friendly: two to four materially distinct choices, one-line tradeoffs, plain language, and no jargon dump.
 - Always let the user write an answer that corrects, combines, or replaces the choices. Include `I don't know yet` when uncertainty is legitimate.
-- For single choice, make alternatives mutually exclusive. For multiple choice, label it clearly and make alternatives independently selectable.
+- Classify the decision shape before drafting: use `single` only when selecting one answer logically excludes every other answer on the same dimension; use `multi` for compatible policies, layered safeguards, features, symptoms, or anything that may be combined; use `rank` only when order itself is the decision.
+- Run a pairwise compatibility check. If any two proposed options can reasonably coexist, split the dimensions or use multiple choice.
+- For multiple choice, omit a maximum by default. Set one only when a real constraint exists and explain that constraint visibly; never invent a cap for brevity or visual simplicity.
+- Make the question coaching-grade: reflect the user's context, expose one consequential assumption or tension, preserve agency, and unlock a decision, experiment, or evidence request. Never use therapy claims, manipulation, shame, manufactured urgency, or a recommendation disguised as a question.
 - When evidence and confirmed criteria support a preference, **must** mark exactly one option or one combination with the localized suffix ` (Recommended)` or ` (Recomendado)`. Put the rationale and material downside outside the label.
 - When evidence is insufficient, do not manufacture a recommendation. Say what fact is missing and offer a low-effort path to resolve it.
 - Treat every recommendation as a proposal until the user explicitly selects or confirms it.

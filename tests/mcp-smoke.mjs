@@ -51,7 +51,7 @@ try {
   });
   assert.equal(invalid.isError, true);
 
-  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-question-v2.html" });
+  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-question-v3.html" });
   assert(resource.contents[0].text.includes("Intent Foundry"));
   process.stdout.write("MCP smoke test passed\n");
 } finally {

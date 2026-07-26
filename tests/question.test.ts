@@ -11,6 +11,7 @@ const question: GuidedQuestion = {
   otherAllowed: true,
   minSelections: 1,
   maxSelections: 2,
+  selectionLimitReason: "Only two controls can be operated at once",
   locale: "en",
 };
 
@@ -54,5 +55,21 @@ describe("validateQuestion", () => {
 
   it("requires explicit all-option bounds for ranking", () => {
     assert.equal(validateQuestion({ ...question, kind: "rank", otherAllowed: false }), "rank_requires_all");
+  });
+
+  it("rejects an unexplained restrictive multi-select maximum", () => {
+    assert.equal(validateQuestion({ ...question, selectionLimitReason: undefined }), "selection_limit_reason_required");
+  });
+
+  it("allows every compatible component when no arbitrary maximum is set", () => {
+    assert.equal(validateQuestion({ ...question, maxSelections: undefined, selectionLimitReason: undefined }), null);
+  });
+
+  it("accepts all five compatible components when the question has no cap", () => {
+    const options = ["A", "B", "C", "D", "E"].map((id) => ({ id, label: `Component ${id}` }));
+    const fivePartQuestion = { ...question, questionId: "R-014-v3", options, maxSelections: undefined, selectionLimitReason: undefined };
+    const fivePartAnswer = { questionId: "R-014-v3", kind: "multi" as const, selected: options.map(({ id }) => id), labels: options.map(({ label }) => label) };
+    assert.equal(validateQuestion(fivePartQuestion), null);
+    assert.equal(validateAnswer(fivePartQuestion, fivePartAnswer), null);
   });
 });

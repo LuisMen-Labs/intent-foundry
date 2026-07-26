@@ -26,4 +26,14 @@ describe("Skill and MCP integration contract", () => {
     assert.match(read("skills/guided-clarity/references/mcp-integration.md"), new RegExp(marker));
     assert.match(read("ui/src/main.tsx"), new RegExp(marker));
   });
+
+  it("requires decision-shape classification, coaching quality, and explained caps", () => {
+    const skill = read("skills/guided-clarity/SKILL.md");
+    const design = read("skills/guided-clarity/references/question-design.md");
+    const coaching = read("skills/guided-clarity/references/coaching-quality.md");
+    assert.match(skill, /pairwise compatibility check/);
+    assert.match(design, /selectionLimitReason/);
+    assert.match(design, /omit `maxSelections` by default/);
+    assert.match(coaching, /Require 6\/6/);
+  });
 });

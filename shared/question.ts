@@ -19,6 +19,7 @@ export interface GuidedQuestion {
   otherAllowed: boolean;
   minSelections: number;
   maxSelections?: number;
+  selectionLimitReason?: string;
   locale: "es" | "en";
 }
 
@@ -65,6 +66,9 @@ export function validateQuestion(question: GuidedQuestion): string | null {
   }
   if (question.kind === "single" && (question.minSelections !== 1 || question.maxSelections !== 1)) {
     return "single_requires_one";
+  }
+  if (question.kind === "multi" && question.maxSelections !== undefined && question.maxSelections < available && !question.selectionLimitReason?.trim()) {
+    return "selection_limit_reason_required";
   }
   if (question.kind === "rank" && (question.otherAllowed || question.minSelections !== question.options.length || question.maxSelections !== question.options.length)) {
     return "rank_requires_all";

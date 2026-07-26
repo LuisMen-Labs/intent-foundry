@@ -8,7 +8,9 @@ Use these gates to keep Guided Clarity from degrading into a generic questionnai
 - The answer can change a decision, constraint, risk, or next action.
 - This is the highest-value unresolved question available.
 - Guided choices are the default; a primary open response has a concrete reason.
-- Single-choice options are mutually exclusive; multiple-choice options are independently selectable.
+- The decision-shape test was applied: single-choice options are pairwise exclusive; compatible or layered components use multiple choice; priority uses ranking.
+- A multi-select maximum is omitted unless a real constraint exists; any restrictive maximum has a visible `selectionLimitReason` and counts `Other` explicitly.
+- The coaching-quality rubric passes: contextual, generative, neutral, consequential, answerable, and actionable.
 - Two to four options cover the materially different paths without cosmetic duplication.
 - A native selector is used when available, and a written `Other` path is always available.
 - When `present_guided_question` is callable, the question is delivered through that tool and not duplicated in assistant prose.

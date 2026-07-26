@@ -28,7 +28,7 @@ Example prompts:
 
 ## Two product layers
 
-- **Full Codex plugin (`0.2.0-beta.2`):** Skill + local MCP server + interactive UI. This is the premium experience under active validation.
+- **Full Codex plugin (`0.2.0-beta.3`):** Skill + local MCP server + interactive UI. This is the premium experience under active validation.
 - **Portable Skill:** the reasoning workflow alone remains usable in compatible Skill hosts such as Claude, Gemini, Antigravity, and Codex, but its visual controls depend on the host.
 
 ## Install the portable Skill
@@ -60,7 +60,7 @@ Platform-ready downloads and exact installation paths are documented in [docs/IN
 
 ## Status
 
-Version `0.2.0-beta.2` closes the Skill-to-MCP invocation gap, versions structured answers, validates recommendation quality, improves selection limits and accessibility, and has passed local protocol/browser tests. Public release, cross-host testing, a screen-reader audit, and comparative user evidence remain pending. Adoption, effectiveness, and superiority over another product are hypotheses to test, not established claims.
+Version `0.2.0-beta.3` adds a decision-shape classifier, a six-gate coaching-quality rubric, rejection of unexplained multi-select caps, and visible reasons for genuine selection limits. Public release, cross-host testing, a screen-reader audit, and comparative user evidence remain pending. Adoption, effectiveness, and superiority over another product are hypotheses to test, not established claims.
 
 The integrated product hypothesis and its acceptance tests are documented in [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
 The runtime loop and package boundaries are documented in [docs/FLOW.md](docs/FLOW.md).

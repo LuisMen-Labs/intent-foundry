@@ -6,12 +6,13 @@ Use this reference whenever `present_guided_question` is available or an incomin
 
 1. Find the callable tool whose name ends in `present_guided_question`; hosts may namespace it.
 2. Call it for every normal single-choice, multiple-choice, or ranking turn. Do not substitute Markdown choices when the tool is callable.
-3. Send two to four materially different options even though the transport accepts more.
+3. Prefer two to four materially different options, but include every material component when omission would distort the decision.
 4. Keep option IDs stable and short. Use the same question ID recorded in durable state.
 5. Put consequences in `description`, the main cost of a recommended path in `downside`, and the decision criterion in `recommendationReason`.
 6. When recommending, mark exactly one option, provide both its downside and the recommendation reason, and keep it unconfirmed until selected.
 7. Include progress when a meaningful current step is known. Never invent a total merely to show a progress bar.
-8. After the tool call, wait. Do not echo the card or append operational details.
+8. For `multi`, omit `maxSelections` unless a real constraint requires a cap. If capped below all available choices, provide `selectionLimitReason`; remember that `Other` consumes one slot.
+9. After the tool call, wait. Do not echo the card or append operational details.
 
 ## Consume the answer
 

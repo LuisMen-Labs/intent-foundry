@@ -19,8 +19,8 @@ declare global {
 }
 
 const copy = {
-  es: { recommended: "Recomendado", other: "Otra respuesta", placeholder: "Escribe tu respuesta…", submit: "Continuar", sending: "Enviando…", sent: "Respuesta enviada", error: "No se pudo enviar. Intenta de nuevo.", invalid: "La pregunta no se pudo mostrar de forma segura.", why: "Por qué importa", downside: "A tener en cuenta", moveUp: "Subir", moveDown: "Bajar", chooseOne: "Elige una opción", chooseUpTo: "Puedes elegir hasta", chooseAtLeast: "Elige al menos", rank: "Ordena de mayor a menor prioridad", limit: "Límite de selecciones alcanzado", otherLabel: "Escribe otra respuesta" },
-  en: { recommended: "Recommended", other: "Other answer", placeholder: "Write your answer…", submit: "Continue", sending: "Sending…", sent: "Answer sent", error: "Could not send. Try again.", invalid: "The question could not be displayed safely.", why: "Why it matters", downside: "Keep in mind", moveUp: "Move up", moveDown: "Move down", chooseOne: "Choose one option", chooseUpTo: "Choose up to", chooseAtLeast: "Choose at least", rank: "Order from highest to lowest priority", limit: "Selection limit reached", otherLabel: "Write another answer" },
+  es: { recommended: "Recomendado", other: "Otra respuesta", placeholder: "Escribe tu respuesta…", submit: "Continuar", sending: "Enviando…", sent: "Respuesta enviada", error: "No se pudo enviar. Intenta de nuevo.", invalid: "La pregunta no se pudo mostrar de forma segura.", why: "Por qué importa", downside: "A tener en cuenta", moveUp: "Subir", moveDown: "Bajar", chooseOne: "Elige una opción", chooseUpTo: "Puedes elegir hasta", chooseAtLeast: "Elige al menos", rank: "Ordena de mayor a menor prioridad", limit: "Límite de selecciones alcanzado", otherLabel: "Escribe otra respuesta", invalidSelection: "La selección necesita una corrección" },
+  en: { recommended: "Recommended", other: "Other answer", placeholder: "Write your answer…", submit: "Continue", sending: "Sending…", sent: "Answer sent", error: "Could not send. Try again.", invalid: "The question could not be displayed safely.", why: "Why it matters", downside: "Keep in mind", moveUp: "Move up", moveDown: "Move down", chooseOne: "Choose one option", chooseUpTo: "Choose up to", chooseAtLeast: "Choose at least", rank: "Order from highest to lowest priority", limit: "Selection limit reached", otherLabel: "Write another answer", invalidSelection: "The selection needs correction" },
 };
 
 const previewKind = new URLSearchParams(window.location.search).get("preview");
@@ -38,7 +38,7 @@ const previewQuestion: GuidedQuestion | null = previewKind ? {
   recommendationReason: "Combinar ambos límites cubre pérdidas rápidas y deterioro acumulado sin depender de una sola señal.",
   otherAllowed: previewKind !== "rank",
   minSelections: previewKind === "rank" ? 3 : 1,
-  maxSelections: previewKind === "single" ? 1 : 3,
+  maxSelections: previewKind === "single" ? 1 : previewKind === "rank" ? 3 : undefined,
   locale: "es",
 } : null;
 
@@ -51,7 +51,7 @@ function App() {
   const [hostError, setHostError] = useState<string | null>(null);
 
   const { app, error } = useApp({
-    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.2" },
+    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.3" },
     capabilities: {},
     onAppCreated: (created: McpApp) => {
       created.ontoolresult = (result) => {
@@ -177,7 +177,7 @@ function App() {
 
         <h1 id="question-title">{question.question}</h1>
         {question.why && <details className="why"><summary>{t.why}</summary><p>{question.why}</p></details>}
-        <p className="selection-hint" aria-live="polite">{question.kind === "single" ? t.chooseOne : question.kind === "rank" ? t.rank : atLimit ? t.limit : question.maxSelections ? `${t.chooseAtLeast} ${question.minSelections} · ${t.chooseUpTo} ${question.maxSelections}` : `${t.chooseAtLeast} ${question.minSelections}`}</p>
+        <p className="selection-hint" aria-live="polite">{question.kind === "single" ? t.chooseOne : question.kind === "rank" ? t.rank : `${atLimit ? t.limit : question.maxSelections ? `${t.chooseAtLeast} ${question.minSelections} · ${t.chooseUpTo} ${question.maxSelections}` : `${t.chooseAtLeast} ${question.minSelections}`}${question.selectionLimitReason ? ` · ${question.selectionLimitReason}` : ""}`}</p>
 
         <div className="options" role={question.kind === "single" ? "radiogroup" : question.kind === "multi" ? "group" : "list"}>
           {orderedOptions.map((option, index) => {
@@ -218,6 +218,7 @@ function App() {
         </div>
 
         {question.recommendationReason && <p className="recommendation-reason"><span>✦</span>{question.recommendationReason}</p>}
+        {validationError && validationError !== "too_few_selections" && <p className="selection-hint" role="alert">{t.invalidSelection}: {validationError}</p>}
 
         <footer>
           <span className={`status ${status}`} role="status" aria-live="polite">{status === "sent" ? t.sent : status === "error" ? t.error : ""}</span>

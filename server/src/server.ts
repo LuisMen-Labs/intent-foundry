@@ -7,8 +7,8 @@ import { z } from "zod";
 import type { GuidedQuestion } from "../../shared/question";
 import { validateQuestion } from "../../shared/question";
 
-const VERSION = "0.2.0-beta.2";
-const RESOURCE_URI = "ui://intent-foundry/guided-question-v2.html";
+const VERSION = "0.2.0-beta.3";
+const RESOURCE_URI = "ui://intent-foundry/guided-question-v3.html";
 const root = resolve(__dirname, "..");
 const widgetHtml = readFileSync(resolve(root, "mcp/assets/index.html"), "utf8");
 
@@ -31,6 +31,7 @@ const questionSchema = {
   otherAllowed: z.boolean().optional(),
   minSelections: z.number().int().min(1).optional(),
   maxSelections: z.number().int().positive().optional(),
+  selectionLimitReason: z.string().max(240).optional(),
   locale: z.enum(["es", "en"]).default("es"),
 };
 
@@ -39,7 +40,7 @@ function createServer() {
 
   registerAppTool(server, "present_guided_question", {
     title: "Present a guided question",
-    description: "Always use this tool when Guided Clarity needs one single-choice, multiple-choice, or ranking answer. It renders an accessible interactive card with tradeoffs, an optional evidence-backed recommendation, progress, and a free-form Other path. Ask exactly one question per call and do not repeat the card in prose.",
+    description: "Always use this tool when Guided Clarity needs one answer. Use single only when one choice logically excludes all others, multi for compatible components, and rank for priority order. Never impose a restrictive multi-select maximum without a concrete selectionLimitReason. The card includes tradeoffs, an optional evidence-backed recommendation, progress, and Other. Ask exactly one question and do not repeat it in prose.",
     inputSchema: questionSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     _meta: {

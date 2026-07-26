@@ -5,12 +5,25 @@ Use this reference whenever preparing the next question.
 ## Sequence
 
 1. Identify the unresolved fact with the highest decision impact.
-2. Choose single choice, multiple choice, or the exceptional open format.
+2. Classify the decision shape using the test below; do not choose a format by habit.
 3. Draft two to four materially different options from known context and realistic alternatives.
 4. Add one short consequence or tradeoff to each option.
 5. Apply the recommendation rule.
 6. Add `Other`/free writing and, when legitimate, `I don't know yet`.
 7. Remove jargon, duplicated options, long preambles, and anything already confirmed.
+
+## Decision-shape test
+
+Ask in order:
+
+1. Does choosing one option logically reject every other option on the same decision dimension? Use `single`.
+2. Can two or more options coexist as policies, safeguards, features, causes, or requirements? Use `multi`.
+3. Is sequence or priority the decision? Use `rank`.
+4. Would predefined options materially anchor or truncate the answer? Use the open-format exception.
+
+Before emitting `single`, compare every option pair. If a reasonable user could truthfully want both, split the dimensions or change to `multi`. Prompts such as “qué componentes”, “cuáles aplican” or “qué debe combinar” normally signal `multi`.
+
+For `multi`, omit `maxSelections` by default. A lower cap is valid only when a real constraint exists—budget, capacity, policy, time, or logical incompatibility—and `selectionLimitReason` states it in user-facing language. `Other` consumes one slot when a maximum exists. Never impose a cap merely to shorten the response.
 
 ## Recommendation rule
 

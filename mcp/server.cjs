@@ -28363,6 +28363,9 @@ function validateQuestion(question) {
   if (question.kind === "single" && (question.minSelections !== 1 || question.maxSelections !== 1)) {
     return "single_requires_one";
   }
+  if (question.kind === "multi" && question.maxSelections !== void 0 && question.maxSelections < available && !question.selectionLimitReason?.trim()) {
+    return "selection_limit_reason_required";
+  }
   if (question.kind === "rank" && (question.otherAllowed || question.minSelections !== question.options.length || question.maxSelections !== question.options.length)) {
     return "rank_requires_all";
   }
@@ -28370,8 +28373,8 @@ function validateQuestion(question) {
 }
 
 // server/src/server.ts
-var VERSION = "0.2.0-beta.2";
-var RESOURCE_URI = "ui://intent-foundry/guided-question-v2.html";
+var VERSION = "0.2.0-beta.3";
+var RESOURCE_URI = "ui://intent-foundry/guided-question-v3.html";
 var root = (0, import_node_path.resolve)(__dirname, "..");
 var widgetHtml = (0, import_node_fs.readFileSync)((0, import_node_path.resolve)(root, "mcp/assets/index.html"), "utf8");
 var optionSchema = external_exports.object({
@@ -28392,13 +28395,14 @@ var questionSchema = {
   otherAllowed: external_exports.boolean().optional(),
   minSelections: external_exports.number().int().min(1).optional(),
   maxSelections: external_exports.number().int().positive().optional(),
+  selectionLimitReason: external_exports.string().max(240).optional(),
   locale: external_exports.enum(["es", "en"]).default("es")
 };
 function createServer() {
   const server = new McpServer({ name: "intent-foundry", version: VERSION });
   K3(server, "present_guided_question", {
     title: "Present a guided question",
-    description: "Always use this tool when Guided Clarity needs one single-choice, multiple-choice, or ranking answer. It renders an accessible interactive card with tradeoffs, an optional evidence-backed recommendation, progress, and a free-form Other path. Ask exactly one question per call and do not repeat the card in prose.",
+    description: "Always use this tool when Guided Clarity needs one answer. Use single only when one choice logically excludes all others, multi for compatible components, and rank for priority order. Never impose a restrictive multi-select maximum without a concrete selectionLimitReason. The card includes tradeoffs, an optional evidence-backed recommendation, progress, and Other. Ask exactly one question and do not repeat it in prose.",
     inputSchema: questionSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     _meta: {
