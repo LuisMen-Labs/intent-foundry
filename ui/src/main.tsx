@@ -32,8 +32,8 @@ declare global {
 }
 
 const copy = {
-  es: { recommended: "Recomendado", other: "Algo más", placeholder: "Escribe lo que encaja mejor…", previous: "Anterior", next: "Siguiente", finish: "Finalizar", retry: "Reintentar", skip: "Omitir", sending: "Guardando…", sent: "Respuesta guardada", finished: "Sesión finalizada", blockReady: "Bloque completado", blockReadyDetail: "Las respuestas están guardadas. Puedes revisarlas o finalizar este bloque.", serverError: "No se pudo guardar. Intenta de nuevo.", invalid: "La pregunta no se pudo mostrar de forma segura.", details: "Ver criterio", why: "Por qué importa", downside: "A tener en cuenta", moveUp: "Subir", moveDown: "Bajar", otherLabel: "Escribe otra respuesta", invalidSelection: "La selección necesita una corrección" },
-  en: { recommended: "Recommended", other: "Something else", placeholder: "Write what fits better…", previous: "Previous", next: "Next", finish: "Finish", retry: "Retry", skip: "Skip", sending: "Saving…", sent: "Answer saved", finished: "Session finished", blockReady: "Block complete", blockReadyDetail: "Your answers are saved. You can review them or finish this block.", serverError: "The answer could not be saved. Try again.", invalid: "The question could not be displayed safely.", details: "View rationale", why: "Why it matters", downside: "Keep in mind", moveUp: "Move up", moveDown: "Move down", otherLabel: "Write another answer", invalidSelection: "The selection needs correction" },
+  es: { recommended: "Recomendado", other: "Algo más", placeholder: "Escribe lo que encaja mejor…", previous: "Anterior", next: "Siguiente", finish: "Finalizar", retry: "Reintentar", skip: "Omitir", sending: "Guardando…", sent: "Respuesta guardada", finished: "Sesión finalizada", answersSaved: "respuestas guardadas.", resume: "Si el chat no continúa automáticamente, vuelve al chat y escribe «Continuar» para que la IA las recupere.", blockReady: "Bloque completado", blockReadyDetail: "Las respuestas están guardadas. Puedes revisarlas o finalizar este bloque.", serverError: "No se pudo guardar. Intenta de nuevo.", invalid: "La pregunta no se pudo mostrar de forma segura.", details: "Ver criterio", why: "Por qué importa", downside: "A tener en cuenta", moveUp: "Subir", moveDown: "Bajar", otherLabel: "Escribe otra respuesta", invalidSelection: "La selección necesita una corrección" },
+  en: { recommended: "Recommended", other: "Something else", placeholder: "Write what fits better…", previous: "Previous", next: "Next", finish: "Finish", retry: "Retry", skip: "Skip", sending: "Saving…", sent: "Answer saved", finished: "Session finished", answersSaved: "answers saved.", resume: "If the chat does not continue automatically, return to it and type “Continue” so the AI can retrieve them.", blockReady: "Block complete", blockReadyDetail: "Your answers are saved. You can review them or finish this block.", serverError: "The answer could not be saved. Try again.", invalid: "The question could not be displayed safely.", details: "View rationale", why: "Why it matters", downside: "Keep in mind", moveUp: "Move up", moveDown: "Move down", otherLabel: "Write another answer", invalidSelection: "The selection needs correction" },
 };
 
 const previewKind = new URLSearchParams(window.location.search).get("preview");
@@ -83,7 +83,7 @@ function App() {
   const [hostError, setHostError] = useState<string | null>(null);
 
   const { app, error } = useApp({
-    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.9" },
+    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.10" },
     capabilities: {},
     onAppCreated: (created: McpApp) => {
       created.ontoolresult = (result) => {
@@ -164,7 +164,9 @@ function App() {
         <section className="card completion" aria-labelledby="completion-title">
           <div className="completion-copy">
             <h1 id="completion-title">{finalized ? t.finished : t.blockReady}</h1>
-            {!finalized && <p>{t.blockReadyDetail}</p>}
+            {finalized
+              ? <p><strong>{savedIds.length} de {session.questions.length}</strong> {t.answersSaved} {t.resume}</p>
+              : <p>{t.blockReadyDetail}</p>}
           </div>
           <footer>
             <button className="previous" disabled={finalized || session.questions.length === 0} onClick={() => { setCurrentIndex(session.questions.length - 1); setStatus("sent"); }}>{t.previous}</button>

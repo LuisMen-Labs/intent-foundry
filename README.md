@@ -31,7 +31,7 @@ Example prompts:
 
 ## Two product layers
 
-- **Full Codex plugin (`0.2.0-beta.9`):** Skill + local MCP server + compact interactive UI. This is the premium experience under active validation.
+- **Full Codex plugin (`0.2.0-beta.10`):** Skill + local MCP server + compact interactive UI. This is the premium experience under active validation.
 - **Portable Skill:** the reasoning workflow alone remains usable in compatible Skill hosts such as Claude, Gemini, Antigravity, and Codex, but its visual controls depend on the host.
 
 ## Install the portable Skill
@@ -63,7 +63,7 @@ Platform-ready downloads and exact installation paths are documented in [docs/IN
 
 ## Status
 
-Version `0.2.0-beta.9` adds continuous checkpointed reviews of up to 32 questions. A known review can be delivered once, verified block by block by the local MCP server, and advanced inside the same widget without a new chat message. The card shows global question and block progress, and the bounded queue remains hashed, temporary, limited to 20 sessions and 24 hours, and validated on every read. Adaptive branches still require a new model turn. Cross-host testing of beta.9, a screen-reader audit, and comparative user evidence remain pending.
+Version `0.2.0-beta.10` keeps continuous checkpointed reviews and adds an explicit final handoff: when the host does not resume the model automatically, the completion screen tells the user to return to the chat and type `Continue`. It does not send a message, open a confirmation dialog, or claim automatic continuation. The bounded queue remains hashed, temporary, limited to 20 sessions and 24 hours, and validated on every read. Adaptive branches still require a new model turn. A screen-reader audit and comparative user evidence remain pending.
 
 The integrated product hypothesis and its acceptance tests are documented in [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
 The runtime loop and package boundaries are documented in [docs/FLOW.md](docs/FLOW.md).

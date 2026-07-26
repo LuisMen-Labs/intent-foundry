@@ -83,6 +83,14 @@ describe("Skill and MCP integration contract", () => {
     assert.match(integration, /Question 11 of 23/);
   });
 
+  it("ends with an honest user action when the host does not resume automatically", () => {
+    const ui = read("ui/src/main.tsx");
+    assert.match(ui, /Si el chat no continúa automáticamente/);
+    assert.match(ui, /escribe «Continuar»/);
+    assert.doesNotMatch(ui, /sendFollowUpMessage/);
+    assert.doesNotMatch(ui, /ui\/message/);
+  });
+
   it("persists only a bounded temporary queue across MCP processes", () => {
     const store = read("server/src/session-store.ts");
     const integration = read("skills/guided-clarity/references/mcp-integration.md");

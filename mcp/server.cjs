@@ -28542,8 +28542,8 @@ function isMissing(error40) {
 }
 
 // server/src/server.ts
-var VERSION = "0.2.0-beta.9";
-var RESOURCE_URI = "ui://intent-foundry/guided-session-v9.html";
+var VERSION = "0.2.0-beta.10";
+var RESOURCE_URI = "ui://intent-foundry/guided-session-v10.html";
 var root = (0, import_node_path2.resolve)(__dirname, "..");
 var widgetHtml = (0, import_node_fs2.readFileSync)((0, import_node_path2.resolve)(root, "mcp/assets/index.html"), "utf8");
 var optionSchema = external_exports.object({

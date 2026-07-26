@@ -10,8 +10,8 @@ import type { GuidedSession, GuidedSessionSnapshot } from "../../shared/session"
 import { checkpointQuestionIds, upsertSessionAnswer, validateSession, validateSessionAnswer } from "../../shared/session";
 import { FileSessionStore, type StoredSession } from "./session-store";
 
-const VERSION = "0.2.0-beta.9";
-const RESOURCE_URI = "ui://intent-foundry/guided-session-v9.html";
+const VERSION = "0.2.0-beta.10";
+const RESOURCE_URI = "ui://intent-foundry/guided-session-v10.html";
 const root = resolve(__dirname, "..");
 const widgetHtml = readFileSync(resolve(root, "mcp/assets/index.html"), "utf8");
 
