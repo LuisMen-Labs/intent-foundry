@@ -46,6 +46,13 @@ $guided-clarity Help me clarify this decision before acting.
 
 The repository can be shared now for source installation. One-click discovery in the public Plugins Directory remains pending marketplace review.
 
+## Gemini, Antigravity, and Claude
+
+Platform-ready downloads and exact installation paths are documented in [docs/INSTALLATION.md](docs/INSTALLATION.md).
+
+- [Gemini-ready ZIP](https://github.com/LuisMen-Labs/intent-foundry/releases/download/v0.1.0/guided-clarity-gemini-v0.1.0.zip)
+- [Claude-ready ZIP](https://github.com/LuisMen-Labs/intent-foundry/releases/download/v0.1.0/guided-clarity-claude-v0.1.0.zip)
+
 ## Status
 
 Version `0.1.0` is an evidence-seeking public preview. Adoption, effectiveness, and recommendation quality are hypotheses to test, not established claims.
