@@ -70,6 +70,17 @@ describe("Skill and MCP integration contract", () => {
     assert.doesNotMatch(ui, /updateModelContext/);
   });
 
+  it("persists only a bounded temporary queue across MCP processes", () => {
+    const store = read("server/src/session-store.ts");
+    const integration = read("skills/guided-clarity/references/mcp-integration.md");
+    assert.match(store, /tmpdir\(\)/);
+    assert.match(store, /createHash\("sha256"\)/);
+    assert.match(store, /MAX_FILE_BYTES/);
+    assert.match(integration, /20 validated sessions/);
+    assert.match(integration, /24 hours/);
+    assert.match(integration, /must never contain secrets/);
+  });
+
   it("requires decision-shape classification, coaching quality, and explained caps", () => {
     const skill = read("skills/guided-clarity/SKILL.md");
     const design = read("skills/guided-clarity/references/question-design.md");

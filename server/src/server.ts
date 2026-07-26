@@ -8,9 +8,10 @@ import type { GuidedAnswer, GuidedQuestion } from "../../shared/question";
 import { validateAnswer, validateQuestion } from "../../shared/question";
 import type { GuidedSession, GuidedSessionSnapshot } from "../../shared/session";
 import { upsertSessionAnswer, validateSession, validateSessionAnswer } from "../../shared/session";
+import { FileSessionStore, type StoredSession } from "./session-store";
 
-const VERSION = "0.2.0-beta.7";
-const RESOURCE_URI = "ui://intent-foundry/guided-session-v7.html";
+const VERSION = "0.2.0-beta.8";
+const RESOURCE_URI = "ui://intent-foundry/guided-session-v8.html";
 const root = resolve(__dirname, "..");
 const widgetHtml = readFileSync(resolve(root, "mcp/assets/index.html"), "utf8");
 
@@ -54,8 +55,6 @@ const guidedSessionSchema = {
 };
 
 type RawQuestion = z.infer<typeof rawQuestionSchema>;
-type StoredSession = { session: GuidedSession; answers: GuidedAnswer[]; finalized: boolean };
-
 function normalizeQuestion(input: RawQuestion): GuidedQuestion {
   return {
     ...input,
@@ -77,25 +76,23 @@ function snapshot(stored: StoredSession): GuidedSessionSnapshot {
 
 function createServer() {
   const server = new McpServer({ name: "intent-foundry", version: VERSION });
-  const sessions = new Map<string, StoredSession>();
+  const sessions = new FileSessionStore();
 
   const rememberSession = (session: GuidedSession) => {
     const prior = sessions.get(session.sessionId);
     const questionIds = new Set(session.questions.map((question) => question.questionId));
-    sessions.delete(session.sessionId);
-    sessions.set(session.sessionId, {
+    sessions.put({
       session,
       answers: (prior?.answers ?? []).filter((answer) => questionIds.has(answer.questionId)),
       finalized: false,
     });
-    while (sessions.size > 20) sessions.delete(sessions.keys().next().value!);
   };
 
   registerAppTool(server, "present_guided_question", {
     title: "Present a guided question",
     description: "Always use this tool when Guided Clarity needs one answer. Use single only when one choice logically excludes all others, multi for compatible components, and rank for priority order. Never impose a restrictive multi-select maximum without a concrete selectionLimitReason. The compact card progressively reveals tradeoffs and supports an optional evidence-backed recommendation, progress, Other, and Skip. Ask exactly one question and do not repeat it in prose.",
     inputSchema: questionSchema,
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     _meta: {
       ui: { resourceUri: RESOURCE_URI },
       "openai/toolInvocation/invoking": "Preparing a guided question…",
@@ -183,6 +180,7 @@ function createServer() {
       return { isError: true, content: [{ type: "text" as const, text: `Invalid guided session answer: ${validationError}` }] };
     }
     stored.answers = upsertSessionAnswer(stored.answers, normalized);
+    sessions.put(stored);
     const state = snapshot(stored);
     return {
       content: [{ type: "text" as const, text: `intent_foundry_session_state_v1\n${JSON.stringify(state)}` }],
@@ -204,6 +202,7 @@ function createServer() {
     const stored = sessions.get(sessionId);
     if (!stored) return { isError: true, content: [{ type: "text" as const, text: "Unknown or expired guided session" }] };
     stored.finalized = true;
+    sessions.put(stored);
     const state = snapshot(stored);
     return {
       content: [{ type: "text" as const, text: `intent_foundry_session_state_v1\n${JSON.stringify(state)}` }],

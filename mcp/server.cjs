@@ -18504,8 +18504,8 @@ var require_dist = __commonJS({
 });
 
 // server/src/server.ts
-var import_node_fs = require("node:fs");
-var import_node_path = require("node:path");
+var import_node_fs2 = require("node:fs");
+var import_node_path2 = require("node:path");
 
 // node_modules/zod/v3/external.js
 var external_exports = {};
@@ -28426,11 +28426,94 @@ function upsertSessionAnswer(answers, answer) {
   return next;
 }
 
+// server/src/session-store.ts
+var import_node_crypto = require("node:crypto");
+var import_node_fs = require("node:fs");
+var import_node_os = require("node:os");
+var import_node_path = require("node:path");
+var FILE_PATTERN = /^[a-f0-9]{64}\.json$/;
+var MAX_FILE_BYTES = 256 * 1024;
+var FileSessionStore = class {
+  rootDir;
+  maxSessions;
+  ttlMs;
+  now;
+  constructor(rootDir = (0, import_node_path.join)((0, import_node_os.tmpdir)(), "intent-foundry", "guided-sessions-v1"), maxSessions = 20, ttlMs = 24 * 60 * 60 * 1e3, now = () => Date.now()) {
+    this.rootDir = rootDir;
+    this.maxSessions = maxSessions;
+    this.ttlMs = ttlMs;
+    this.now = now;
+    (0, import_node_fs.mkdirSync)(rootDir, { recursive: true, mode: 448 });
+    if (!(0, import_node_fs.lstatSync)(rootDir).isDirectory() || (0, import_node_fs.lstatSync)(rootDir).isSymbolicLink()) {
+      throw new Error("Intent Foundry session store must be a real directory");
+    }
+  }
+  get(sessionId) {
+    this.cleanup();
+    const path = this.pathFor(sessionId);
+    try {
+      const stats = (0, import_node_fs.statSync)(path);
+      if (!stats.isFile() || stats.size > MAX_FILE_BYTES) return null;
+      const parsed = JSON.parse((0, import_node_fs.readFileSync)(path, "utf8"));
+      if (!isStoredSession(parsed, sessionId)) return null;
+      if (this.now() - parsed.updatedAt > this.ttlMs) {
+        (0, import_node_fs.unlinkSync)(path);
+        return null;
+      }
+      return parsed;
+    } catch (error40) {
+      if (isMissing(error40)) return null;
+      return null;
+    }
+  }
+  put(stored) {
+    const record2 = { ...stored, updatedAt: this.now() };
+    if (!isStoredSession(record2, stored.session.sessionId)) {
+      throw new Error("Refusing to persist an invalid guided session");
+    }
+    (0, import_node_fs.mkdirSync)(this.rootDir, { recursive: true, mode: 448 });
+    const target = this.pathFor(stored.session.sessionId);
+    const temporary = (0, import_node_path.join)(this.rootDir, `.${this.hash(stored.session.sessionId)}.${process.pid}.${this.now()}.tmp`);
+    (0, import_node_fs.writeFileSync)(temporary, JSON.stringify(record2), { encoding: "utf8", mode: 384, flag: "wx" });
+    (0, import_node_fs.renameSync)(temporary, target);
+    this.cleanup();
+    return record2;
+  }
+  cleanup() {
+    const now = this.now();
+    const files = (0, import_node_fs.readdirSync)(this.rootDir, { withFileTypes: true }).filter((entry) => entry.isFile() && FILE_PATTERN.test(entry.name)).map((entry) => {
+      const path = (0, import_node_path.join)(this.rootDir, entry.name);
+      return { path, mtimeMs: (0, import_node_fs.statSync)(path).mtimeMs };
+    }).sort((left, right) => right.mtimeMs - left.mtimeMs);
+    for (const [index, file2] of files.entries()) {
+      if (index >= this.maxSessions || now - file2.mtimeMs > this.ttlMs) (0, import_node_fs.unlinkSync)(file2.path);
+    }
+  }
+  pathFor(sessionId) {
+    return (0, import_node_path.join)(this.rootDir, `${this.hash(sessionId)}.json`);
+  }
+  hash(sessionId) {
+    return (0, import_node_crypto.createHash)("sha256").update(sessionId, "utf8").digest("hex");
+  }
+};
+function isStoredSession(value, expectedSessionId) {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value;
+  if (!candidate.session || candidate.session.sessionId !== expectedSessionId) return false;
+  if (validateSession(candidate.session) !== null) return false;
+  if (!Array.isArray(candidate.answers) || typeof candidate.finalized !== "boolean") return false;
+  if (typeof candidate.updatedAt !== "number" || !Number.isFinite(candidate.updatedAt)) return false;
+  return candidate.answers.every((answer) => validateSessionAnswer(candidate.session, answer) === null);
+}
+function isMissing(error40) {
+  return error40 instanceof Error && "code" in error40 && error40.code === "ENOENT";
+}
+
 // server/src/server.ts
-var VERSION = "0.2.0-beta.7";
-var RESOURCE_URI = "ui://intent-foundry/guided-session-v7.html";
-var root = (0, import_node_path.resolve)(__dirname, "..");
-var widgetHtml = (0, import_node_fs.readFileSync)((0, import_node_path.resolve)(root, "mcp/assets/index.html"), "utf8");
+var VERSION = "0.2.0-beta.8";
+var RESOURCE_URI = "ui://intent-foundry/guided-session-v8.html";
+var root = (0, import_node_path2.resolve)(__dirname, "..");
+var widgetHtml = (0, import_node_fs2.readFileSync)((0, import_node_path2.resolve)(root, "mcp/assets/index.html"), "utf8");
 var optionSchema = external_exports.object({
   id: external_exports.string().min(1).max(24),
   label: external_exports.string().min(1).max(120),
@@ -28485,23 +28568,21 @@ function snapshot(stored) {
 }
 function createServer() {
   const server = new McpServer({ name: "intent-foundry", version: VERSION });
-  const sessions = /* @__PURE__ */ new Map();
+  const sessions = new FileSessionStore();
   const rememberSession = (session) => {
     const prior = sessions.get(session.sessionId);
     const questionIds = new Set(session.questions.map((question) => question.questionId));
-    sessions.delete(session.sessionId);
-    sessions.set(session.sessionId, {
+    sessions.put({
       session,
       answers: (prior?.answers ?? []).filter((answer) => questionIds.has(answer.questionId)),
       finalized: false
     });
-    while (sessions.size > 20) sessions.delete(sessions.keys().next().value);
   };
   K3(server, "present_guided_question", {
     title: "Present a guided question",
     description: "Always use this tool when Guided Clarity needs one answer. Use single only when one choice logically excludes all others, multi for compatible components, and rank for priority order. Never impose a restrictive multi-select maximum without a concrete selectionLimitReason. The compact card progressively reveals tradeoffs and supports an optional evidence-backed recommendation, progress, Other, and Skip. Ask exactly one question and do not repeat it in prose.",
     inputSchema: questionSchema,
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     _meta: {
       ui: { resourceUri: RESOURCE_URI },
       "openai/toolInvocation/invoking": "Preparing a guided question\u2026",
@@ -28586,6 +28667,7 @@ ${JSON.stringify(normalized)}` }],
       return { isError: true, content: [{ type: "text", text: `Invalid guided session answer: ${validationError}` }] };
     }
     stored.answers = upsertSessionAnswer(stored.answers, normalized);
+    sessions.put(stored);
     const state = snapshot(stored);
     return {
       content: [{ type: "text", text: `intent_foundry_session_state_v1
@@ -28607,6 +28689,7 @@ ${JSON.stringify(state)}` }],
     const stored = sessions.get(sessionId);
     if (!stored) return { isError: true, content: [{ type: "text", text: "Unknown or expired guided session" }] };
     stored.finalized = true;
+    sessions.put(stored);
     const state = snapshot(stored);
     return {
       content: [{ type: "text", text: `intent_foundry_session_state_v1

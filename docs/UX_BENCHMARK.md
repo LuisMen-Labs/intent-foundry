@@ -28,7 +28,7 @@ The differentiation hypothesis adds:
 - explicit permission boundary;
 - portable, reviewable project state.
 
-## Evidence achieved through beta.7
+## Evidence achieved through beta.8
 
 - Single, multi, and rank component paths implemented.
 - `Other`, progress, recommendation, reason, downside, and validation implemented.
@@ -48,11 +48,13 @@ The differentiation hypothesis adds:
 - Navigable microsequences now support Previous, Next, Finish, draft restoration, and answer revision by stable `questionId` without drafting a chat message.
 - Browser regression verified a three-question sequence end to end: advance, restore, revise, complete, return from completion, and finalize.
 - Responsive regression at 390 x 844 verified all four controls remain visible and the document width equals the viewport width.
-- The answer queue is bounded, validated, and in memory only. The model can retrieve its latest state through `read_guided_session` on the next normal turn.
+- Beta.7 introduced a bounded, validated process-local answer queue and `read_guided_session`.
+- Real use exposed that beta.7's process-local queue could disappear between the app tool call and the next model turn even though the card displayed a successful save.
+- Beta.8 moves only the bounded session queue to a validated local temporary store and adds a two-process MCP regression that reproduces the host boundary.
 
 ## Evidence still required
 
-- Render and submit beta.7 through a fresh actual Codex/ChatGPT plugin host after reinstall, verifying the complete microsequence and retrieval loop.
+- Render and submit beta.8 through a fresh actual Codex/ChatGPT plugin host after reinstall, verifying the complete microsequence and retrieval loop.
 - Revisit/reload test for host widget-state recovery.
 - Keyboard-only and screen-reader audit.
 - Mobile host test.

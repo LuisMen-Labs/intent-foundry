@@ -1,6 +1,6 @@
 {
   "name": "intent-foundry",
-  "version": "0.2.0-beta.7",
+  "version": "0.2.0-beta.8",
   "description": "Turn ambiguous requests into verified, portable intent before AI acts.",
   "author": {
     "name": "LuisMen-Labs",

@@ -22,7 +22,7 @@ Use `present_guided_sequence` for two to four questions only when each later que
 
 The card owns `Previous`, `Next`, and `Finish`. `Next` validates and upserts the current answer before advancing. `Previous` restores the saved draft, and a revision replaces the earlier answer with the same `questionId`. `Finish` closes the block without manufacturing answers for untouched questions.
 
-On the next normal user turn, call `read_guided_session` with the known `sessionId` before asking another question. Validate the returned questions and answers, persist Confirmed and Unknown state, then prepare a new adaptive block. The MCP server keeps at most a bounded in-memory queue; it is not durable project memory and does not survive every restart.
+On the next normal user turn, call `read_guided_session` with the known `sessionId` before asking another question. Validate the returned questions and answers, persist Confirmed and Unknown state, then prepare a new adaptive block. The MCP server keeps at most 20 validated sessions for up to 24 hours in the operating system's local temporary directory so app and model calls may cross process boundaries. This queue is not durable project memory, is not synchronized across devices, and must never contain secrets.
 
 ## Consume the answer
 

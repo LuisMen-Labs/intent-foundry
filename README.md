@@ -30,7 +30,7 @@ Example prompts:
 
 ## Two product layers
 
-- **Full Codex plugin (`0.2.0-beta.7`):** Skill + local MCP server + compact interactive UI. This is the premium experience under active validation.
+- **Full Codex plugin (`0.2.0-beta.8`):** Skill + local MCP server + compact interactive UI. This is the premium experience under active validation.
 - **Portable Skill:** the reasoning workflow alone remains usable in compatible Skill hosts such as Claude, Gemini, Antigravity, and Codex, but its visual controls depend on the host.
 
 ## Install the portable Skill
@@ -62,7 +62,7 @@ Platform-ready downloads and exact installation paths are documented in [docs/IN
 
 ## Status
 
-Version `0.2.0-beta.7` adds short navigable microsequences with Previous, Next, Finish, revision by `questionId`, and an in-memory answer queue. It retains one internal MCP call per saved answer and never drafts a follow-up chat message. The agent may retrieve the validated sequence state on the next normal turn; starting that turn automatically remains host-dependent. Cross-host testing, a screen-reader audit, and comparative user evidence remain pending.
+Version `0.2.0-beta.8` keeps the navigable microsequence from beta.7 and persists its bounded queue in the operating system's local temporary directory for up to 24 hours. This allows the app transport and a later model turn to use different MCP processes without losing validated answers. State is hashed by session ID, limited to 20 sessions, validated on every read, and remains temporary rather than project memory. The widget never drafts a follow-up chat message. Cross-host testing, a screen-reader audit, and comparative user evidence remain pending.
 
 The integrated product hypothesis and its acceptance tests are documented in [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
 The runtime loop and package boundaries are documented in [docs/FLOW.md](docs/FLOW.md).

@@ -107,10 +107,23 @@ try {
   assert.equal(sessionState.structuredContent.answers.length, 1);
   assert.equal(sessionState.structuredContent.answers[0].selected[0], "B");
 
-  const finalized = await client.callTool({ name: "finalize_guided_session", arguments: { sessionId: "smoke-session" } });
-  assert.equal(finalized.structuredContent.finalized, true);
+  const restartedClient = new Client({ name: "intent-foundry-restart-smoke", version: "1.0.0" });
+  const restartedTransport = new StdioClientTransport({
+    command: process.execPath,
+    args: ["mcp/server.cjs", "--stdio"],
+  });
+  await restartedClient.connect(restartedTransport);
+  try {
+    const resumed = await restartedClient.callTool({ name: "read_guided_session", arguments: { sessionId: "smoke-session" } });
+    assert.equal(resumed.structuredContent.answers.length, 1);
+    assert.equal(resumed.structuredContent.answers[0].selected[0], "B");
+    const finalized = await restartedClient.callTool({ name: "finalize_guided_session", arguments: { sessionId: "smoke-session" } });
+    assert.equal(finalized.structuredContent.finalized, true);
+  } finally {
+    await restartedClient.close();
+  }
 
-  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-session-v7.html" });
+  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-session-v8.html" });
   assert(resource.contents[0].text.includes("Intent Foundry"));
   process.stdout.write("MCP smoke test passed\n");
 } finally {

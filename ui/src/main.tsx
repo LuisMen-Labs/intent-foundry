@@ -82,7 +82,7 @@ function App() {
   const [hostError, setHostError] = useState<string | null>(null);
 
   const { app, error } = useApp({
-    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.7" },
+    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.8" },
     capabilities: {},
     onAppCreated: (created: McpApp) => {
       created.ontoolresult = (result) => {
