@@ -6,9 +6,11 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import type { GuidedAnswer, GuidedQuestion } from "../../shared/question";
 import { validateAnswer, validateQuestion } from "../../shared/question";
+import type { GuidedSession, GuidedSessionSnapshot } from "../../shared/session";
+import { upsertSessionAnswer, validateSession, validateSessionAnswer } from "../../shared/session";
 
-const VERSION = "0.2.0-beta.6";
-const RESOURCE_URI = "ui://intent-foundry/guided-question-v6.html";
+const VERSION = "0.2.0-beta.7";
+const RESOURCE_URI = "ui://intent-foundry/guided-session-v7.html";
 const root = resolve(__dirname, "..");
 const widgetHtml = readFileSync(resolve(root, "mcp/assets/index.html"), "utf8");
 
@@ -45,8 +47,49 @@ const answerSchema = z.object({
   skipped: z.boolean().optional(),
 });
 
+const rawQuestionSchema = z.object(questionSchema);
+const guidedSessionSchema = {
+  sessionId: z.string().min(1).max(80),
+  questions: z.array(rawQuestionSchema).min(1).max(8),
+};
+
+type RawQuestion = z.infer<typeof rawQuestionSchema>;
+type StoredSession = { session: GuidedSession; answers: GuidedAnswer[]; finalized: boolean };
+
+function normalizeQuestion(input: RawQuestion): GuidedQuestion {
+  return {
+    ...input,
+    otherAllowed: input.kind === "rank" ? false : (input.otherAllowed ?? true),
+    allowSkip: input.allowSkip ?? true,
+    minSelections: input.kind === "rank" ? input.options.length : (input.minSelections ?? 1),
+    maxSelections: input.kind === "single" || input.kind === "rank" ? (input.kind === "rank" ? input.options.length : 1) : input.maxSelections,
+  };
+}
+
+function snapshot(stored: StoredSession): GuidedSessionSnapshot {
+  return {
+    marker: "intent_foundry_session_state_v1",
+    sessionId: stored.session.sessionId,
+    answers: stored.answers,
+    finalized: stored.finalized,
+  };
+}
+
 function createServer() {
   const server = new McpServer({ name: "intent-foundry", version: VERSION });
+  const sessions = new Map<string, StoredSession>();
+
+  const rememberSession = (session: GuidedSession) => {
+    const prior = sessions.get(session.sessionId);
+    const questionIds = new Set(session.questions.map((question) => question.questionId));
+    sessions.delete(session.sessionId);
+    sessions.set(session.sessionId, {
+      session,
+      answers: (prior?.answers ?? []).filter((answer) => questionIds.has(answer.questionId)),
+      finalized: false,
+    });
+    while (sessions.size > 20) sessions.delete(sessions.keys().next().value!);
+  };
 
   registerAppTool(server, "present_guided_question", {
     title: "Present a guided question",
@@ -59,13 +102,7 @@ function createServer() {
       "openai/toolInvocation/invoked": "Question ready",
     },
   }, async (input) => {
-    const question: GuidedQuestion = {
-      ...input,
-      otherAllowed: input.kind === "rank" ? false : (input.otherAllowed ?? true),
-      allowSkip: input.allowSkip ?? true,
-      minSelections: input.kind === "rank" ? input.options.length : (input.minSelections ?? 1),
-      maxSelections: input.kind === "single" || input.kind === "rank" ? (input.kind === "rank" ? input.options.length : 1) : input.maxSelections,
-    };
+    const question = normalizeQuestion(input);
     const validationError = validateQuestion(question);
     if (validationError) {
       return { isError: true, content: [{ type: "text" as const, text: `Invalid guided question: ${validationError}` }] };
@@ -74,6 +111,33 @@ function createServer() {
     return {
       content: [{ type: "text" as const, text: headlessSummary(question) }],
       structuredContent: question as unknown as Record<string, unknown>,
+    };
+  });
+
+  registerAppTool(server, "present_guided_sequence", {
+    title: "Present a guided question sequence",
+    description: "Present a short navigable microsequence when every queued question remains valid regardless of earlier selections. Use a new sequence after a material branch. The card provides Previous, Next, Finish, revision by questionId, and an internal answer queue. Do not use this tool to hide dependent branches inside a fixed questionnaire.",
+    inputSchema: guidedSessionSchema,
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    _meta: {
+      ui: { resourceUri: RESOURCE_URI },
+      "openai/toolInvocation/invoking": "Preparing a guided sequence…",
+      "openai/toolInvocation/invoked": "Sequence ready",
+    },
+  }, async ({ sessionId, questions: rawQuestions }) => {
+    const session: GuidedSession = {
+      marker: "intent_foundry_session_v1",
+      sessionId,
+      questions: rawQuestions.map(normalizeQuestion),
+    };
+    const validationError = validateSession(session);
+    if (validationError) {
+      return { isError: true, content: [{ type: "text" as const, text: `Invalid guided session: ${validationError}` }] };
+    }
+    rememberSession(session);
+    return {
+      content: [{ type: "text" as const, text: headlessSessionSummary(session) }],
+      structuredContent: session as unknown as Record<string, unknown>,
     };
   });
 
@@ -99,12 +163,80 @@ function createServer() {
     };
   });
 
+  server.registerTool("save_guided_session_answer", {
+    title: "Save a guided session answer",
+    description: "Validate and upsert one answer inside an active Intent Foundry sequence. Internal UI transport only.",
+    inputSchema: { sessionId: z.string().min(1).max(80), answer: answerSchema },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    _meta: {
+      ui: { visibility: ["app"] },
+      "openai/toolInvocation/invoking": "Saving answer…",
+      "openai/toolInvocation/invoked": "Answer saved",
+    },
+  }, async ({ sessionId, answer }) => {
+    const stored = sessions.get(sessionId);
+    if (!stored) return { isError: true, content: [{ type: "text" as const, text: "Unknown or expired guided session" }] };
+    if (stored.finalized) return { isError: true, content: [{ type: "text" as const, text: "Guided session is finalized" }] };
+    const normalized = answer as GuidedAnswer;
+    const validationError = validateSessionAnswer(stored.session, normalized);
+    if (validationError) {
+      return { isError: true, content: [{ type: "text" as const, text: `Invalid guided session answer: ${validationError}` }] };
+    }
+    stored.answers = upsertSessionAnswer(stored.answers, normalized);
+    const state = snapshot(stored);
+    return {
+      content: [{ type: "text" as const, text: `intent_foundry_session_state_v1\n${JSON.stringify(state)}` }],
+      structuredContent: state as unknown as Record<string, unknown>,
+    };
+  });
+
+  server.registerTool("finalize_guided_session", {
+    title: "Finalize a guided session",
+    description: "Finalize an active Intent Foundry sequence without inventing answers for unfinished questions. Internal UI transport only.",
+    inputSchema: { sessionId: z.string().min(1).max(80) },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    _meta: {
+      ui: { visibility: ["app"] },
+      "openai/toolInvocation/invoking": "Finalizing sequence…",
+      "openai/toolInvocation/invoked": "Sequence finalized",
+    },
+  }, async ({ sessionId }) => {
+    const stored = sessions.get(sessionId);
+    if (!stored) return { isError: true, content: [{ type: "text" as const, text: "Unknown or expired guided session" }] };
+    stored.finalized = true;
+    const state = snapshot(stored);
+    return {
+      content: [{ type: "text" as const, text: `intent_foundry_session_state_v1\n${JSON.stringify(state)}` }],
+      structuredContent: state as unknown as Record<string, unknown>,
+    };
+  });
+
+  server.registerTool("read_guided_session", {
+    title: "Read a guided session",
+    description: "Read the validated latest answers from an Intent Foundry sequence so the agent can persist them and prepare the next adaptive block. Never infer unanswered questions.",
+    inputSchema: { sessionId: z.string().min(1).max(80) },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+  }, async ({ sessionId }) => {
+    const stored = sessions.get(sessionId);
+    if (!stored) return { isError: true, content: [{ type: "text" as const, text: "Unknown or expired guided session" }] };
+    const state = snapshot(stored);
+    return {
+      content: [{ type: "text" as const, text: `intent_foundry_session_state_v1\n${JSON.stringify(state)}` }],
+      structuredContent: { ...state, questions: stored.session.questions } as unknown as Record<string, unknown>,
+    };
+  });
+
   registerAppResource(server, "Intent Foundry guided question", RESOURCE_URI, {
     mimeType: RESOURCE_MIME_TYPE,
-    description: "Compact accessible single-select, multi-select, and ranking interface with progressive disclosure.",
+    description: "Compact accessible guided-question and navigable microsequence interface with progressive disclosure.",
   }, async () => ({ contents: [{ uri: RESOURCE_URI, mimeType: RESOURCE_MIME_TYPE, text: widgetHtml, _meta: { ui: { prefersBorder: false } } }] }));
 
   return server;
+}
+
+function headlessSessionSummary(session: GuidedSession): string {
+  const ids = session.questions.map((question) => question.questionId).join(", ");
+  return `Intent Foundry rendered guided sequence ${session.sessionId} with questions ${ids}. In a graphical host, wait for navigation and finalization. In a headless host, present one compact letter-based fallback question at a time.`;
 }
 
 function headlessSummary(question: GuidedQuestion): string {

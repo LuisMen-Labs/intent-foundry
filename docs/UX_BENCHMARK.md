@@ -28,7 +28,7 @@ The differentiation hypothesis adds:
 - explicit permission boundary;
 - portable, reviewable project state.
 
-## Evidence achieved through beta.6
+## Evidence achieved through beta.7
 
 - Single, multi, and rank component paths implemented.
 - `Other`, progress, recommendation, reason, downside, and validation implemented.
@@ -45,10 +45,14 @@ The differentiation hypothesis adds:
 - `Skip` has a validated, backward-compatible payload and remains Unknown rather than becoming a false decision.
 - Submission now uses only the internal MCP answer tool. It does not call `ui/message` or `ui/update-model-context`, removing both the follow-up-message dialog and the redundant acknowledgement stage by design; actual-host automatic continuation is still host-dependent.
 - Local browser verification confirmed selection disclosure, three simultaneous compatible selections, enabled submission, and no horizontal overflow at the tested desktop width.
+- Navigable microsequences now support Previous, Next, Finish, draft restoration, and answer revision by stable `questionId` without drafting a chat message.
+- Browser regression verified a three-question sequence end to end: advance, restore, revise, complete, return from completion, and finalize.
+- Responsive regression at 390 x 844 verified all four controls remain visible and the document width equals the viewport width.
+- The answer queue is bounded, validated, and in memory only. The model can retrieve its latest state through `read_guided_session` on the next normal turn.
 
 ## Evidence still required
 
-- Render and submit beta.6 through the actual Codex/ChatGPT plugin host after reinstall, verifying that one click records the answer without drafting a chat message or showing a false delivery error.
+- Render and submit beta.7 through a fresh actual Codex/ChatGPT plugin host after reinstall, verifying the complete microsequence and retrieval loop.
 - Revisit/reload test for host widget-state recovery.
 - Keyboard-only and screen-reader audit.
 - Mobile host test.

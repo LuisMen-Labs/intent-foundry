@@ -14,7 +14,7 @@ Help the user understand and express what they mean before an AI acts. Treat the
 3. Select one mode from [modes.md](references/modes.md): Discover, Decide, Challenge, or Audit. Combine modes only when the task requires it.
 4. If filesystem access exists, reuse the project's state file or copy [INTERVIEW_STATE.template.md](assets/INTERVIEW_STATE.template.md). Otherwise maintain a compact state in the conversation.
 5. Prepare the single highest-value unresolved question using [question-design.md](references/question-design.md). Apply [coaching-quality.md](references/coaching-quality.md) whenever the question concerns goals, beliefs, tradeoffs, risk, commitment, or a consequential decision.
-6. Present guided choices through `present_guided_question` whenever that MCP tool is available. Follow [mcp-integration.md](references/mcp-integration.md) for the exact handoff and answer contract.
+6. Present guided choices through `present_guided_sequence` when two to four questions remain valid regardless of earlier selections; otherwise use `present_guided_question`. Follow [mcp-integration.md](references/mcp-integration.md) for navigation, retrieval, and answer contracts.
 7. Capture the user's selection or correction, then classify it as Confirmed, Inferred, or Unknown.
 8. Persist the answer before preparing the next question. Never record the AI's recommendation as the user's decision.
 9. Adapt the next question to the new state, switch modes when justified, or stop when remaining unknowns are immaterial.
@@ -26,8 +26,9 @@ Help the user understand and express what they mean before an AI acts. Treat the
 - Encode progress in the card's compact progress indicator when available. Do not add a prose preamble merely to announce progress.
 - Default to guided choices. Use free response as the primary format only when proposed options would materially bias or truncate the user's meaning.
 - Use the platform's native single-choice or multi-choice control whenever available. If the control supplies an `Other` field, rely on it; otherwise include a free-write escape.
-- Treat `present_guided_question` as the native control for this plugin. If it is callable, use it instead of printing simulated options in prose.
+- Treat `present_guided_question` and `present_guided_sequence` as the native controls for this plugin. Use a microsequence only across questions that do not require an adaptive branch; start a new block after a material branch.
 - Keep the default card visually silent: question, compact options, subtle progress, `Other`, and `Skip` only. Put rationale, tradeoffs, and coaching depth behind progressive disclosure so they remain available without burdening the first scan.
+- In a navigable block, let the card own `Previous`, `Next`, and `Finish`. Revisions replace the prior answer for the same `questionId`; finishing never invents answers for untouched questions.
 - Keep the question phone-friendly: two to four materially distinct choices, one-line tradeoffs, plain language, and no jargon dump.
 - Always let the user write an answer that corrects, combines, or replaces the choices. Include `I don't know yet` when uncertainty is legitimate.
 - Classify the decision shape before drafting: use `single` only when selecting one answer logically excludes every other answer on the same dimension; use `multi` for compatible policies, layered safeguards, features, symptoms, or anything that may be combined; use `rank` only when order itself is the decision.
@@ -49,6 +50,7 @@ Help the user understand and express what they mean before an AI acts. Treat the
 - Keep source citations out of the choice block. Include only the minimum evidence note needed to understand a high-stakes recommendation.
 - After calling the MCP question tool, do not repeat its question, choices, or a second assistant summary. Wait for the submitted answer.
 - Treat `Skip` as Unknown, never as rejection or confirmation. Preserve the unanswered decision and adapt, park, or revisit it according to impact.
+- On the next normal turn after a microsequence, call `read_guided_session` for the active `sessionId` before asking anything else. Validate and persist every returned answer, then prepare the next adaptive block. Do not claim the UI can start a model turn automatically.
 
 Use this compact fallback only when the host permits textual choices:
 

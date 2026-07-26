@@ -6,7 +6,7 @@ Intent Foundry is an open-source Codex plugin that turns incomplete ideas into v
 
 ## What makes it different
 
-- One high-value question per turn instead of a static questionnaire.
+- One high-value question at a time, with optional short microsequences only when later questions do not depend on earlier answers.
 - Guided choices by default, with an open question only when choices would distort the answer.
 - Native single-select, multi-select, ranking, and written `Other` controls in compatible ChatGPT/Codex hosts.
 - Recommendations with reasons, never hidden steering.
@@ -16,6 +16,7 @@ Intent Foundry is an open-source Codex plugin that turns incomplete ideas into v
 - Spanish or English interaction that follows the user's language.
 - Silent draft persistence in the host, without an Intent Foundry account, API key, or telemetry.
 - Internal answer submission through an MCP tool instead of a follow-up chat message; automatic next-turn behavior remains host-dependent during beta.
+- Previous, Next, and Finish navigation inside compatible graphical hosts; compact letter choices remain the honest CLI fallback.
 
 ## Use it
 
@@ -29,7 +30,7 @@ Example prompts:
 
 ## Two product layers
 
-- **Full Codex plugin (`0.2.0-beta.6`):** Skill + local MCP server + compact interactive UI. This is the premium experience under active validation.
+- **Full Codex plugin (`0.2.0-beta.7`):** Skill + local MCP server + compact interactive UI. This is the premium experience under active validation.
 - **Portable Skill:** the reasoning workflow alone remains usable in compatible Skill hosts such as Claude, Gemini, Antigravity, and Codex, but its visual controls depend on the host.
 
 ## Install the portable Skill
@@ -61,7 +62,7 @@ Platform-ready downloads and exact installation paths are documented in [docs/IN
 
 ## Status
 
-Version `0.2.0-beta.6` keeps the compact interaction and uses one internal MCP tool call as the complete answer-delivery path. It does not call the follow-up-message or model-context APIs, so the widget neither drafts a chat prompt nor performs a redundant second delivery that can produce a false error. Automatic creation of the next model turn remains host-dependent. Cross-host testing, a screen-reader audit, and comparative user evidence remain pending.
+Version `0.2.0-beta.7` adds short navigable microsequences with Previous, Next, Finish, revision by `questionId`, and an in-memory answer queue. It retains one internal MCP call per saved answer and never drafts a follow-up chat message. The agent may retrieve the validated sequence state on the next normal turn; starting that turn automatically remains host-dependent. Cross-host testing, a screen-reader audit, and comparative user evidence remain pending.
 
 The integrated product hypothesis and its acceptance tests are documented in [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
 The runtime loop and package boundaries are documented in [docs/FLOW.md](docs/FLOW.md).

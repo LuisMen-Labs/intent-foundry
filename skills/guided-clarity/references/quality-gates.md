@@ -13,7 +13,8 @@ Use these gates to keep Guided Clarity from degrading into a generic questionnai
 - The coaching-quality rubric passes: contextual, generative, neutral, consequential, answerable, and actionable.
 - Two to four options cover the materially different paths without cosmetic duplication.
 - A native selector is used when available, and a written `Other` path is always available.
-- When `present_guided_question` is callable, the question is delivered through that tool and not duplicated in assistant prose.
+- When a native question tool is callable, the question or microsequence is delivered through it and not duplicated in assistant prose.
+- Every question placed in one microsequence remains valid under every answer to earlier questions; a material branch ends the block.
 - The question, tradeoffs, and recommendation rationale are understandable on one phone screen whenever the subject permits it.
 - The user can normally answer in under 30 seconds.
 - A selection can be answered by clicking/tapping or by a short code such as `B` or `A+C`; it never requires typing `confirm`, `yes`, or restating the option.
@@ -39,6 +40,7 @@ Use these gates to keep Guided Clarity from degrading into a generic questionnai
 - Contradictions are preserved rather than silently reconciled.
 - The exact next question is recorded so another session can resume.
 - A structured MCP answer matches the active question ID, kind, option IDs, and selection bounds before it is persisted.
+- A retrieved session answer replaces any earlier answer with the same `questionId`; missing answers remain Unknown, including after `Finish`.
 
 ## Before completing
 

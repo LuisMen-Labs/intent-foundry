@@ -26,7 +26,7 @@ Serve `mcp/assets` only on loopback and open one of:
 /?preview=rank
 ```
 
-Preview mode is a local demonstration fixture. It does not call the MCP host or transmit an answer.
+`preview=single` currently exercises a three-question navigable microsequence. Preview mode is a local demonstration fixture. It does not call the MCP host or transmit an answer.
 
 ## Release gates
 

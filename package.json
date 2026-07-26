@@ -1,6 +1,6 @@
 {
   "name": "intent-foundry",
-  "version": "0.2.0-beta.6",
+  "version": "0.2.0-beta.7",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
     "build:server": "esbuild server/src/server.ts --bundle --platform=node --format=cjs --outfile=mcp/server.cjs",
     "check": "tsc --noEmit && npm test",
     "smoke:mcp": "node tests/mcp-smoke.mjs",
-    "test": "node --test tests/question.test.ts tests/delivery.test.ts tests/package-contract.test.ts"
+    "test": "node --test tests/question.test.ts tests/session.test.ts tests/delivery.test.ts tests/package-contract.test.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "1.7.5",

@@ -12,7 +12,9 @@ try {
   await client.connect(transport);
   const tools = await client.listTools();
   assert(tools.tools.some((tool) => tool.name === "present_guided_question"));
+  assert(tools.tools.some((tool) => tool.name === "present_guided_sequence"));
   assert(tools.tools.some((tool) => tool.name === "submit_guided_answer"));
+  assert(tools.tools.some((tool) => tool.name === "read_guided_session"));
 
   const result = await client.callTool({
     name: "present_guided_question",
@@ -62,7 +64,53 @@ try {
   assert.equal(submitted.isError, undefined);
   assert.equal(submitted.structuredContent.answer.selected[0], "A");
 
-  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-question-v6.html" });
+  const sequence = await client.callTool({
+    name: "present_guided_sequence",
+    arguments: {
+      sessionId: "smoke-session",
+      questions: [
+        {
+          questionId: "sequence-1",
+          question: "Which first path?",
+          kind: "single",
+          options: [{ id: "A", label: "Alpha" }, { id: "B", label: "Beta" }],
+          otherAllowed: true,
+          minSelections: 1,
+          maxSelections: 1,
+          locale: "en",
+        },
+        {
+          questionId: "sequence-2",
+          question: "Which second path?",
+          kind: "single",
+          options: [{ id: "A", label: "Gamma" }, { id: "B", label: "Delta" }],
+          otherAllowed: true,
+          minSelections: 1,
+          maxSelections: 1,
+          locale: "en",
+        },
+      ],
+    },
+  });
+  assert.equal(sequence.isError, undefined);
+  assert.equal(sequence.structuredContent.questions.length, 2);
+
+  await client.callTool({
+    name: "save_guided_session_answer",
+    arguments: { sessionId: "smoke-session", answer: { questionId: "sequence-1", kind: "single", selected: ["A"], labels: ["Alpha"] } },
+  });
+  await client.callTool({
+    name: "save_guided_session_answer",
+    arguments: { sessionId: "smoke-session", answer: { questionId: "sequence-1", kind: "single", selected: ["B"], labels: ["Beta"] } },
+  });
+  const sessionState = await client.callTool({ name: "read_guided_session", arguments: { sessionId: "smoke-session" } });
+  assert.equal(sessionState.structuredContent.answers.length, 1);
+  assert.equal(sessionState.structuredContent.answers[0].selected[0], "B");
+
+  const finalized = await client.callTool({ name: "finalize_guided_session", arguments: { sessionId: "smoke-session" } });
+  assert.equal(finalized.structuredContent.finalized, true);
+
+  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-session-v7.html" });
   assert(resource.contents[0].text.includes("Intent Foundry"));
   process.stdout.write("MCP smoke test passed\n");
 } finally {

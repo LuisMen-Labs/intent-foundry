@@ -56,6 +56,20 @@ describe("Skill and MCP integration contract", () => {
     assert.match(integration, /progressive disclosure/);
   });
 
+  it("supports navigable microsequences without chat messages", () => {
+    const ui = read("ui/src/main.tsx");
+    const server = read("server/src/server.ts");
+    const integration = read("skills/guided-clarity/references/mcp-integration.md");
+    assert.match(ui, /Anterior/);
+    assert.match(ui, /Siguiente/);
+    assert.match(ui, /Finalizar/);
+    assert.match(server, /present_guided_sequence/);
+    assert.match(server, /save_guided_session_answer/);
+    assert.match(server, /read_guided_session/);
+    assert.match(integration, /present_guided_sequence/);
+    assert.doesNotMatch(ui, /updateModelContext/);
+  });
+
   it("requires decision-shape classification, coaching quality, and explained caps", () => {
     const skill = read("skills/guided-clarity/SKILL.md");
     const design = read("skills/guided-clarity/references/question-design.md");

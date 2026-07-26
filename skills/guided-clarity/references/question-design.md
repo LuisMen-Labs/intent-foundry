@@ -39,7 +39,7 @@ Prefer the host's native selector. Follow its option-count and label constraints
 
 Default to a compact first scan. Show only the question, option labels, recommendation badge, progress, `Other`, and `Skip`; reveal descriptions and downsides when an option is selected, and keep rationale in a secondary details control. Deep coaching should improve the decision without making every turn read like a report.
 
-When `present_guided_question` is available, read [mcp-integration.md](mcp-integration.md) and call it. Availability without invocation is an integration failure, not a native-selector success.
+When the native tools are available, read [mcp-integration.md](mcp-integration.md). Use `present_guided_sequence` only for a short microsequence whose later questions remain valid under every earlier answer; otherwise call `present_guided_question`. Availability without invocation is an integration failure, not a native-selector success.
 
 When native controls are unavailable but textual choices are allowed, use letters and accept `A`, `B`, or combinations such as `A+C`. Do not ask the user to type `confirm`, `yes`, or repeat an option label. When neither native nor textual selection is allowed, pause instead of converting the decision into an open prompt.
 
