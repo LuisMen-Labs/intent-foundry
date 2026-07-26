@@ -7,8 +7,8 @@ import { z } from "zod";
 import type { GuidedAnswer, GuidedQuestion } from "../../shared/question";
 import { validateAnswer, validateQuestion } from "../../shared/question";
 
-const VERSION = "0.2.0-beta.5";
-const RESOURCE_URI = "ui://intent-foundry/guided-question-v5.html";
+const VERSION = "0.2.0-beta.6";
+const RESOURCE_URI = "ui://intent-foundry/guided-question-v6.html";
 const root = resolve(__dirname, "..");
 const widgetHtml = readFileSync(resolve(root, "mcp/assets/index.html"), "utf8");
 

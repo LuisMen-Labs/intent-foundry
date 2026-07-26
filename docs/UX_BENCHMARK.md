@@ -28,7 +28,7 @@ The differentiation hypothesis adds:
 - explicit permission boundary;
 - portable, reviewable project state.
 
-## Evidence achieved through beta.5
+## Evidence achieved through beta.6
 
 - Single, multi, and rank component paths implemented.
 - `Other`, progress, recommendation, reason, downside, and validation implemented.
@@ -43,12 +43,12 @@ The differentiation hypothesis adds:
 - The first scan is now a compact card with flat rows, discreet progress, inline `Other`, and no visible preamble.
 - Descriptions, downsides, and coaching rationale use progressive disclosure instead of occupying the default view.
 - `Skip` has a validated, backward-compatible payload and remains Unknown rather than becoming a false decision.
-- Submission now uses an internal MCP tool plus model-visible context instead of `ui/message`, removing the follow-up-message dialog by design; actual-host automatic continuation is still unverified.
+- Submission now uses only the internal MCP answer tool. It does not call `ui/message` or `ui/update-model-context`, removing both the follow-up-message dialog and the redundant acknowledgement stage by design; actual-host automatic continuation is still host-dependent.
 - Local browser verification confirmed selection disclosure, three simultaneous compatible selections, enabled submission, and no horizontal overflow at the tested desktop width.
 
 ## Evidence still required
 
-- Render and submit beta.5 through the actual Codex/ChatGPT plugin host after reinstall, including a context-only retry after simulated or observed delivery failure.
+- Render and submit beta.6 through the actual Codex/ChatGPT plugin host after reinstall, verifying that one click records the answer without drafting a chat message or showing a false delivery error.
 - Revisit/reload test for host widget-state recovery.
 - Keyboard-only and screen-reader audit.
 - Mobile host test.

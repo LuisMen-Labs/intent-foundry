@@ -1,10 +1,9 @@
-export type DeliveryStatus = "sent" | "server-error" | "context-error";
+export type DeliveryStatus = "sent" | "server-error";
 
 type ToolResult = { isError?: boolean };
 
 export interface DeliveryTransport {
   submit: () => Promise<ToolResult>;
-  updateContext: () => Promise<unknown>;
 }
 
 export interface DeliveryResult {
@@ -14,21 +13,12 @@ export interface DeliveryResult {
 
 export async function deliverGuidedAnswer(
   transport: DeliveryTransport,
-  serverAlreadyAccepted: boolean,
 ): Promise<DeliveryResult> {
-  if (!serverAlreadyAccepted) {
-    try {
-      const result = await transport.submit();
-      if (result.isError) return { status: "server-error", serverAccepted: false };
-    } catch {
-      return { status: "server-error", serverAccepted: false };
-    }
-  }
-
   try {
-    await transport.updateContext();
-    return { status: "sent", serverAccepted: true };
+    const result = await transport.submit();
+    if (result.isError) return { status: "server-error", serverAccepted: false };
   } catch {
-    return { status: "context-error", serverAccepted: true };
+    return { status: "server-error", serverAccepted: false };
   }
+  return { status: "sent", serverAccepted: true };
 }

@@ -62,7 +62,7 @@ try {
   assert.equal(submitted.isError, undefined);
   assert.equal(submitted.structuredContent.answer.selected[0], "A");
 
-  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-question-v5.html" });
+  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-question-v6.html" });
   assert(resource.contents[0].text.includes("Intent Foundry"));
   process.stdout.write("MCP smoke test passed\n");
 } finally {

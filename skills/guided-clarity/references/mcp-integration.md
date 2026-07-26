@@ -18,9 +18,9 @@ Use this reference whenever `present_guided_question` is available or an incomin
 
 ## Consume the answer
 
-The component should submit through the internal `submit_guided_answer` tool and update model-visible context. Do not use `ui/message` for normal submission: hosts may require a follow-up-message confirmation. Internal submission avoids that dialog, but automatic creation of the next model turn is host-dependent and must be tested honestly.
+The component should submit through the internal `submit_guided_answer` tool only. Its structured tool result is the answer envelope consumed by the host. Do not also call `ui/message` or `ui/update-model-context`: the former can require a follow-up-message confirmation, while the latter creates a redundant delivery stage and can produce a false failure after the server has already accepted the answer.
 
-Treat server acceptance and model-context delivery as separate stages. If server validation succeeds but the context update fails, preserve the accepted answer and retry only the context update. Do not resubmit the same answer to the server merely because the host did not acknowledge the second stage. Deduplicate repeated envelopes by active `questionId` when persisting durable state.
+Treat the successful MCP tool result as the complete submission. A true tool rejection may show a retryable error. Deduplicate repeated envelopes by active `questionId` when persisting durable state. Automatic creation of the next model turn is host-dependent and must be tested honestly; never fabricate a visible chat prompt merely to wake the model.
 
 The internal tool returns this envelope in its content and structured result:
 

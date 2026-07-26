@@ -24,24 +24,25 @@ describe("Skill and MCP integration contract", () => {
   it("uses the same answer envelope in the Skill and UI", () => {
     const marker = "intent_foundry_answer_v1";
     assert.match(read("skills/guided-clarity/references/mcp-integration.md"), new RegExp(marker));
-    assert.match(read("ui/src/main.tsx"), new RegExp(marker));
+    assert.match(read("server/src/server.ts"), new RegExp(marker));
   });
 
   it("submits internally without the follow-up-message channel", () => {
     const ui = read("ui/src/main.tsx");
     const server = read("server/src/server.ts");
     assert.match(ui, /callServerTool/);
-    assert.match(ui, /updateModelContext/);
+    assert.doesNotMatch(ui, /updateModelContext/);
     assert.doesNotMatch(ui, /sendMessage/);
+    assert.doesNotMatch(ui, /sendFollowUpMessage/);
     assert.match(server, /submit_guided_answer/);
     assert.match(server, /visibility: \["app"\]/);
   });
 
-  it("distinguishes server rejection from context-delivery failure", () => {
-    const ui = read("ui/src/main.tsx");
-    assert.match(ui, /server-error/);
-    assert.match(ui, /context-error/);
-    assert.match(ui, /acceptedFingerprint/);
+  it("has no redundant chat or model-context delivery stage", () => {
+    const delivery = read("ui/src/delivery.ts");
+    assert.match(delivery, /server-error/);
+    assert.doesNotMatch(delivery, /context-pending/);
+    assert.doesNotMatch(delivery, /updateContext/);
   });
 
   it("keeps the compact, progressive-disclosure response contract", () => {

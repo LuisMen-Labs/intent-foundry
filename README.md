@@ -29,7 +29,7 @@ Example prompts:
 
 ## Two product layers
 
-- **Full Codex plugin (`0.2.0-beta.5`):** Skill + local MCP server + compact interactive UI. This is the premium experience under active validation.
+- **Full Codex plugin (`0.2.0-beta.6`):** Skill + local MCP server + compact interactive UI. This is the premium experience under active validation.
 - **Portable Skill:** the reasoning workflow alone remains usable in compatible Skill hosts such as Claude, Gemini, Antigravity, and Codex, but its visual controls depend on the host.
 
 ## Install the portable Skill
@@ -61,7 +61,7 @@ Platform-ready downloads and exact installation paths are documented in [docs/IN
 
 ## Status
 
-Version `0.2.0-beta.5` keeps beta.4's compact, quiet interaction and hardens internal delivery: server validation and model-context delivery now have distinct states, an accepted answer is not resubmitted during a context-only retry, and the submission tool is explicitly app-only. Public release, cross-host testing, a screen-reader audit, and comparative user evidence remain pending. Adoption, effectiveness, and superiority over another product are hypotheses to test, not established claims.
+Version `0.2.0-beta.6` keeps the compact interaction and uses one internal MCP tool call as the complete answer-delivery path. It does not call the follow-up-message or model-context APIs, so the widget neither drafts a chat prompt nor performs a redundant second delivery that can produce a false error. Automatic creation of the next model turn remains host-dependent. Cross-host testing, a screen-reader audit, and comparative user evidence remain pending.
 
 The integrated product hypothesis and its acceptance tests are documented in [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
 The runtime loop and package boundaries are documented in [docs/FLOW.md](docs/FLOW.md).

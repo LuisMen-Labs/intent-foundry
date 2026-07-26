@@ -28400,8 +28400,8 @@ function validateAnswer(question, answer) {
 }
 
 // server/src/server.ts
-var VERSION = "0.2.0-beta.5";
-var RESOURCE_URI = "ui://intent-foundry/guided-question-v5.html";
+var VERSION = "0.2.0-beta.6";
+var RESOURCE_URI = "ui://intent-foundry/guided-question-v6.html";
 var root = (0, import_node_path.resolve)(__dirname, "..");
 var widgetHtml = (0, import_node_fs.readFileSync)((0, import_node_path.resolve)(root, "mcp/assets/index.html"), "utf8");
 var optionSchema = external_exports.object({
