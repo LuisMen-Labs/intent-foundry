@@ -34,6 +34,8 @@ Clone the repository and install it using the plugin or Skill installation workf
 
 Version `0.1.0` is an evidence-seeking public preview. Adoption, effectiveness, and recommendation quality are hypotheses to test, not established claims.
 
+The integrated product hypothesis and its acceptance tests are documented in [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

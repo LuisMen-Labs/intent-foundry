@@ -15,6 +15,7 @@ Help the user understand and express what they mean before an AI acts. Treat the
 4. If filesystem access exists, reuse the project's state file or copy [INTERVIEW_STATE.template.md](assets/INTERVIEW_STATE.template.md). Otherwise maintain a compact state in the conversation.
 5. State the purpose briefly and ask the single highest-value unresolved question.
 6. Match the user's language. Keep state and the final Intent Pack in that language unless the user requests another one.
+7. Prefer immediate value over interview length. Stop asking when the remaining unknowns do not materially change the requested decision or action.
 
 ## Ask one question per turn
 
@@ -29,6 +30,7 @@ Help the user understand and express what they mean before an AI acts. Treat the
 - Mark at most one single-choice option with the exact localized suffix: ` (Recommended)` in English or ` (Recomendado)` in Spanish. For multiple choice, mark only the suggested combination. Explain the evidence or criterion separately.
 - Never recommend merely to steer the user. When evidence is insufficient, show tradeoffs without a recommendation.
 - Adapt the next question to the last confirmed answer. Do not dump the full questionnaire unless asked.
+- Choose for information gain: ask what most reduces consequential uncertainty, not what is easiest to ask.
 
 Use this compact pattern:
 
@@ -82,4 +84,4 @@ Do not declare completion while a blocking ambiguity remains. The final pack mus
 - next action and exact resume point;
 - provenance and last-updated date.
 
-End with a short verification question so the user can correct the pack before it controls downstream work.
+Apply the gates in [quality-gates.md](references/quality-gates.md) before recommending, persisting, or completing. End with a short verification question so the user can correct the pack before it controls downstream work.

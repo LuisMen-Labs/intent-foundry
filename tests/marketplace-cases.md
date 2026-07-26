@@ -22,3 +22,12 @@
 - Never treat a recommendation as user confirmation.
 - Never execute a consequential action merely because the interview is complete.
 - Never claim automatic cross-device synchronization when only a portable file or copyable checkpoint is available.
+
+## Differential regression checks
+
+- A recommendation must show rationale and downside, and remain unconfirmed until the user accepts it.
+- An ambiguous answer must stay Inferred or Unknown rather than becoming Confirmed.
+- Pausing must produce an exact resume question.
+- A resumed session must preserve rejected alternatives and their reasons.
+- A simple direct request must not trigger an unnecessary interview.
+- Spanish interaction must use `(Recomendado)`; English interaction must use `(Recommended)`.
