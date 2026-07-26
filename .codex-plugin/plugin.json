@@ -1,0 +1,30 @@
+{
+  "name": "intent-foundry",
+  "version": "0.1.0",
+  "description": "Turn ambiguous requests into verified, portable intent before AI acts.",
+  "author": {
+    "name": "LuisMen-Labs",
+    "url": "https://github.com/LuisMen-Labs"
+  },
+  "homepage": "https://github.com/LuisMen-Labs/intent-foundry#readme",
+  "repository": "https://github.com/LuisMen-Labs/intent-foundry",
+  "license": "MIT",
+  "keywords": ["clarification", "intent", "decisions", "requirements", "handoff", "alignment"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Intent Foundry",
+    "shortDescription": "Understand first. Act with clarity.",
+    "longDescription": "Guided Clarity asks one adaptive question at a time, challenges assumptions, confirms decisions, and creates portable context before AI acts.",
+    "developerName": "LuisMen-Labs",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Write"],
+    "websiteURL": "https://github.com/LuisMen-Labs/intent-foundry",
+    "privacyPolicyURL": "https://github.com/LuisMen-Labs/intent-foundry/blob/main/PRIVACY.md",
+    "termsOfServiceURL": "https://github.com/LuisMen-Labs/intent-foundry/blob/main/TERMS.md",
+    "defaultPrompt": [
+      "Clarify my idea before we build it.",
+      "Help me decide without hiding the tradeoffs.",
+      "Challenge my assumptions and create a handoff."
+    ]
+  }
+}
