@@ -1,6 +1,6 @@
 interface:
   display_name: "Guided Clarity"
   short_description: "Turn ambiguity into verified intent"
-  default_prompt: "Use $guided-clarity to clarify my goal before taking action."
+  default_prompt: "Use $intent-foundry:guided-clarity to clarify my goal before taking action."
 policy:
   allow_implicit_invocation: true

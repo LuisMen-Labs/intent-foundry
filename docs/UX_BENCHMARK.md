@@ -28,7 +28,7 @@ The differentiation hypothesis adds:
 - explicit permission boundary;
 - portable, reviewable project state.
 
-## Evidence achieved in beta.1
+## Evidence achieved through beta.2
 
 - Single, multi, and rank component paths implemented.
 - `Other`, progress, recommendation, reason, downside, and validation implemented.
@@ -36,10 +36,14 @@ The differentiation hypothesis adds:
 - Accessibility DOM exposed named checkboxes and a disabled-until-valid button.
 - Real browser click enabled submission and produced the success state.
 - Dark theme and responsive CSS inspected locally.
+- The installed plugin exposes `mcp__intentFoundry__present_guided_question` in a fresh Codex task.
+- The Skill now requires that tool when callable and defines a versioned structured-answer envelope.
+- Browser regression passed for single selection and submit, multi-selection cap, ranking reorder, mobile width without horizontal overflow, progress semantics, and zero console warnings/errors.
+- Recommendation payloads now require both a reason and a material downside.
 
 ## Evidence still required
 
-- Install and render through the actual Codex/ChatGPT plugin host.
+- Render and submit beta.2 through the actual Codex/ChatGPT plugin host after reinstall.
 - Revisit/reload test for host widget-state recovery.
 - Keyboard-only and screen-reader audit.
 - Mobile host test.

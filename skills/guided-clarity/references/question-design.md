@@ -24,6 +24,8 @@ Use this reference whenever preparing the next question.
 
 Prefer the host's native selector. Follow its option-count and label constraints. Put tradeoffs in descriptions and use its built-in `Other` response when present. Do not simulate buttons with prose when host policy prohibits textual multiple-choice questions.
 
+When `present_guided_question` is available, read [mcp-integration.md](mcp-integration.md) and call it. Availability without invocation is an integration failure, not a native-selector success.
+
 When native controls are unavailable but textual choices are allowed, use letters and accept `A`, `B`, or combinations such as `A+C`. Do not ask the user to type `confirm`, `yes`, or repeat an option label. When neither native nor textual selection is allowed, pause instead of converting the decision into an open prompt.
 
 ## Tone

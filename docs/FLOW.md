@@ -63,3 +63,5 @@ intent-foundry/
 ```
 
 `SKILL.md` owns reasoning and interview sequencing. The MCP tool owns the typed question contract. The component owns interaction ergonomics and host-local draft state. Durable project state remains explicit Markdown rather than hidden server storage. Compatible hosts without MCP Apps use the portable Skill contract.
+
+The Skill-to-MCP bridge is mandatory when the tool exists: the model calls the namespaced tool ending in `present_guided_question`, the component submits an `intent_foundry_answer_v1` envelope, and the Skill validates that envelope against the active question before persistence. Tool availability without invocation is treated as an integration failure.

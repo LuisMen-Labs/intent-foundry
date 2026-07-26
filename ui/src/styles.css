@@ -17,6 +17,8 @@ h1 { margin: 0; font-size: clamp(20px, 4vw, 28px); line-height: 1.24; letter-spa
 .option { border: 1px solid light-dark(#dce4df, #3b4742); border-radius: 14px; background: light-dark(#fff, #202925); transition: border-color .15s ease, background .15s ease, transform .15s ease; }
 .option:hover { transform: translateY(-1px); border-color: light-dark(#a4b8ae, #61736b); }
 .option.selected { border-color: #10a37f; background: light-dark(#f0fbf7, #18372e); box-shadow: 0 0 0 1px rgba(16, 163, 127, .16); }
+.option.disabled { opacity: .52; }
+.option.disabled:hover { transform: none; border-color: light-dark(#dce4df, #3b4742); }
 .option.recommended:not(.selected) { border-color: light-dark(#a9dccc, #396e5e); }
 .option label, .rank-row { display: flex; gap: 12px; padding: 14px; cursor: pointer; align-items: flex-start; }
 .option input { position: absolute; opacity: 0; pointer-events: none; }

@@ -14,10 +14,11 @@ Help the user understand and express what they mean before an AI acts. Treat the
 3. Select one mode from [modes.md](references/modes.md): Discover, Decide, Challenge, or Audit. Combine modes only when the task requires it.
 4. If filesystem access exists, reuse the project's state file or copy [INTERVIEW_STATE.template.md](assets/INTERVIEW_STATE.template.md). Otherwise maintain a compact state in the conversation.
 5. Prepare the single highest-value unresolved question using [question-design.md](references/question-design.md).
-6. Present guided choices, capture the user's selection or correction, then classify it as Confirmed, Inferred, or Unknown.
-7. Persist the answer before preparing the next question. Never record the AI's recommendation as the user's decision.
-8. Adapt the next question to the new state, switch modes when justified, or stop when remaining unknowns are immaterial.
-9. Match the user's language. Keep state and the final Intent Pack in that language unless the user requests another one.
+6. Present guided choices through `present_guided_question` whenever that MCP tool is available. Follow [mcp-integration.md](references/mcp-integration.md) for the exact handoff and answer contract.
+7. Capture the user's selection or correction, then classify it as Confirmed, Inferred, or Unknown.
+8. Persist the answer before preparing the next question. Never record the AI's recommendation as the user's decision.
+9. Adapt the next question to the new state, switch modes when justified, or stop when remaining unknowns are immaterial.
+10. Match the user's language. Keep state and the final Intent Pack in that language unless the user requests another one.
 
 ## Make every question easy to answer
 
@@ -25,6 +26,7 @@ Help the user understand and express what they mean before an AI acts. Treat the
 - Begin with a brief progress cue: what is already clear and what this answer unlocks.
 - Default to guided choices. Use free response as the primary format only when proposed options would materially bias or truncate the user's meaning.
 - Use the platform's native single-choice or multi-choice control whenever available. If the control supplies an `Other` field, rely on it; otherwise include a free-write escape.
+- Treat `present_guided_question` as the native control for this plugin. If it is callable, use it instead of printing simulated options in prose.
 - Keep the question phone-friendly: two to four materially distinct choices, one-line tradeoffs, plain language, and no jargon dump.
 - Always let the user write an answer that corrects, combines, or replaces the choices. Include `I don't know yet` when uncertainty is legitimate.
 - For single choice, make alternatives mutually exclusive. For multiple choice, label it clearly and make alternatives independently selectable.
@@ -41,6 +43,7 @@ Help the user understand and express what they mean before an AI acts. Treat the
 - Persist state silently. Do not append modified-file lists, Git activity, hashes, validation logs, internal workflow, or a generic completion summary to a question turn.
 - Report operational details only when the user asks, pauses, requests a handoff, or a material failure requires attention.
 - Keep source citations out of the choice block. Include only the minimum evidence note needed to understand a high-stakes recommendation.
+- After calling the MCP question tool, do not repeat its question, choices, or a second assistant summary. Wait for the submitted answer.
 
 Use this compact fallback only when the host permits textual choices:
 

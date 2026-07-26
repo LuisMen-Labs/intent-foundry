@@ -28329,9 +28329,49 @@ var StdioServerTransport = class {
   }
 };
 
+// shared/question.ts
+function validateQuestion(question) {
+  if (!question.questionId.trim() || !question.question.trim()) return "missing_question";
+  if (question.options.length < 2 || question.options.length > 8) return "invalid_option_count";
+  if (new Set(question.options.map((option) => option.id)).size !== question.options.length) {
+    return "duplicate_option";
+  }
+  if (question.options.some((option) => !option.id.trim() || !option.label.trim())) {
+    return "invalid_option";
+  }
+  const recommended = question.options.filter((option) => option.recommended);
+  if (recommended.length > 1) return "multiple_recommendations";
+  if (recommended.length === 1 && !question.recommendationReason?.trim()) {
+    return "recommendation_reason_required";
+  }
+  if (recommended.length === 1 && !recommended[0].downside?.trim()) {
+    return "recommendation_downside_required";
+  }
+  if (question.recommendationReason?.trim() && recommended.length !== 1) {
+    return "recommendation_option_required";
+  }
+  if (question.progress?.total !== void 0 && question.progress.current > question.progress.total) {
+    return "invalid_progress";
+  }
+  if (question.maxSelections !== void 0 && question.maxSelections < question.minSelections) {
+    return "invalid_selection_bounds";
+  }
+  const available = question.options.length + (question.otherAllowed && question.kind !== "rank" ? 1 : 0);
+  if (question.minSelections > available || question.maxSelections !== void 0 && question.maxSelections > available) {
+    return "selection_bounds_exceed_choices";
+  }
+  if (question.kind === "single" && (question.minSelections !== 1 || question.maxSelections !== 1)) {
+    return "single_requires_one";
+  }
+  if (question.kind === "rank" && (question.otherAllowed || question.minSelections !== question.options.length || question.maxSelections !== question.options.length)) {
+    return "rank_requires_all";
+  }
+  return null;
+}
+
 // server/src/server.ts
-var VERSION = "0.2.0-beta.1";
-var RESOURCE_URI = "ui://intent-foundry/guided-question-v1.html";
+var VERSION = "0.2.0-beta.2";
+var RESOURCE_URI = "ui://intent-foundry/guided-question-v2.html";
 var root = (0, import_node_path.resolve)(__dirname, "..");
 var widgetHtml = (0, import_node_fs.readFileSync)((0, import_node_path.resolve)(root, "mcp/assets/index.html"), "utf8");
 var optionSchema = external_exports.object({
@@ -28349,8 +28389,8 @@ var questionSchema = {
   why: external_exports.string().max(500).optional(),
   progress: external_exports.object({ current: external_exports.number().int().positive(), total: external_exports.number().int().positive().optional(), label: external_exports.string().max(80).optional() }).optional(),
   recommendationReason: external_exports.string().max(400).optional(),
-  otherAllowed: external_exports.boolean().default(true),
-  minSelections: external_exports.number().int().min(1).default(1),
+  otherAllowed: external_exports.boolean().optional(),
+  minSelections: external_exports.number().int().min(1).optional(),
   maxSelections: external_exports.number().int().positive().optional(),
   locale: external_exports.enum(["es", "en"]).default("es")
 };
@@ -28358,44 +28398,39 @@ function createServer() {
   const server = new McpServer({ name: "intent-foundry", version: VERSION });
   K3(server, "present_guided_question", {
     title: "Present a guided question",
-    description: "Render one high-value question as an accessible interactive card. Use for Guided Clarity interviews and decisions requiring single choice, multiple selection, ranking, a recommendation with tradeoffs, or a free-form Other answer. Ask only one question per call.",
+    description: "Always use this tool when Guided Clarity needs one single-choice, multiple-choice, or ranking answer. It renders an accessible interactive card with tradeoffs, an optional evidence-backed recommendation, progress, and a free-form Other path. Ask exactly one question per call and do not repeat the card in prose.",
     inputSchema: questionSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
-    _meta: { ui: { resourceUri: RESOURCE_URI } }
+    _meta: {
+      ui: { resourceUri: RESOURCE_URI },
+      "openai/toolInvocation/invoking": "Preparing a guided question\u2026",
+      "openai/toolInvocation/invoked": "Question ready"
+    }
   }, async (input) => {
-    const recommendedCount = input.options.filter((option) => option.recommended).length;
-    if (recommendedCount > 1) {
-      return { isError: true, content: [{ type: "text", text: "Only one option may be marked as recommended." }] };
-    }
-    if (new Set(input.options.map((option) => option.id)).size !== input.options.length) {
-      return { isError: true, content: [{ type: "text", text: "Option IDs must be unique." }] };
-    }
-    if (input.maxSelections !== void 0 && input.maxSelections < input.minSelections) {
-      return { isError: true, content: [{ type: "text", text: "maxSelections must be greater than or equal to minSelections." }] };
-    }
-    const availableChoices = input.options.length + (input.otherAllowed && input.kind !== "rank" ? 1 : 0);
-    if (input.minSelections > availableChoices || input.maxSelections !== void 0 && input.maxSelections > availableChoices) {
-      return { isError: true, content: [{ type: "text", text: "Selection limits exceed the available choices." }] };
-    }
-    if (input.progress?.total !== void 0 && input.progress.current > input.progress.total) {
-      return { isError: true, content: [{ type: "text", text: "Progress current cannot exceed progress total." }] };
-    }
-    if (input.recommendationReason && recommendedCount !== 1) {
-      return { isError: true, content: [{ type: "text", text: "A recommendation reason requires exactly one recommended option." }] };
-    }
-    if (input.kind === "single" && (input.minSelections !== 1 || input.maxSelections !== void 0 && input.maxSelections !== 1)) {
-      return { isError: true, content: [{ type: "text", text: "Single-choice questions require exactly one selection." }] };
+    const question = {
+      ...input,
+      otherAllowed: input.kind === "rank" ? false : input.otherAllowed ?? true,
+      minSelections: input.kind === "rank" ? input.options.length : input.minSelections ?? 1,
+      maxSelections: input.kind === "single" || input.kind === "rank" ? input.kind === "rank" ? input.options.length : 1 : input.maxSelections
+    };
+    const validationError = validateQuestion(question);
+    if (validationError) {
+      return { isError: true, content: [{ type: "text", text: `Invalid guided question: ${validationError}` }] };
     }
     return {
-      content: [{ type: "text", text: "An interactive Intent Foundry question is displayed. Do not repeat the options or add operational details; wait for the user's submitted answer." }],
-      structuredContent: input
+      content: [{ type: "text", text: headlessSummary(question) }],
+      structuredContent: question
     };
   });
   N3(server, "Intent Foundry guided question", RESOURCE_URI, {
     mimeType: p,
     description: "Accessible single-select, multi-select, and ranking question interface."
-  }, async () => ({ contents: [{ uri: RESOURCE_URI, mimeType: p, text: widgetHtml }] }));
+  }, async () => ({ contents: [{ uri: RESOURCE_URI, mimeType: p, text: widgetHtml, _meta: { ui: { prefersBorder: false } } }] }));
   return server;
+}
+function headlessSummary(question) {
+  const choices = question.options.map((option) => `${option.id}. ${option.label}`).join(" | ");
+  return `Intent Foundry rendered question ${question.questionId}: ${question.question} Choices: ${choices}. Wait for the user's submitted answer; do not repeat the card or add operational details.`;
 }
 async function main() {
   if (!process.argv.includes("--stdio")) throw new Error("Intent Foundry currently supports --stdio transport.");

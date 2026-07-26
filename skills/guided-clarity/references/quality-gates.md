@@ -11,6 +11,7 @@ Use these gates to keep Guided Clarity from degrading into a generic questionnai
 - Single-choice options are mutually exclusive; multiple-choice options are independently selectable.
 - Two to four options cover the materially different paths without cosmetic duplication.
 - A native selector is used when available, and a written `Other` path is always available.
+- When `present_guided_question` is callable, the question is delivered through that tool and not duplicated in assistant prose.
 - The question, tradeoffs, and recommendation rationale are understandable on one phone screen whenever the subject permits it.
 - The user can normally answer in under 30 seconds.
 - A selection can be answered by clicking/tapping or by a short code such as `B` or `A+C`; it never requires typing `confirm`, `yes`, or restating the option.
@@ -26,6 +27,7 @@ Use these gates to keep Guided Clarity from degrading into a generic questionnai
 - The rationale is separate from the localized `(Recommended)` or `(Recomendado)` label.
 - The recommendation remains an AI proposal until the user confirms it.
 - Confirmation occurs by selecting the recommended option or combination, not by a separate free-form confirmation step.
+- A recommended option has both a separate rationale and a visible material downside.
 
 ## Before persisting
 
@@ -34,6 +36,7 @@ Use these gates to keep Guided Clarity from degrading into a generic questionnai
 - No secret, authentication material, or unnecessary personal data is written.
 - Contradictions are preserved rather than silently reconciled.
 - The exact next question is recorded so another session can resume.
+- A structured MCP answer matches the active question ID, kind, option IDs, and selection bounds before it is persisted.
 
 ## Before completing
 

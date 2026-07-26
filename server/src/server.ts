@@ -4,9 +4,11 @@ import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@model
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import type { GuidedQuestion } from "../../shared/question";
+import { validateQuestion } from "../../shared/question";
 
-const VERSION = "0.2.0-beta.1";
-const RESOURCE_URI = "ui://intent-foundry/guided-question-v1.html";
+const VERSION = "0.2.0-beta.2";
+const RESOURCE_URI = "ui://intent-foundry/guided-question-v2.html";
 const root = resolve(__dirname, "..");
 const widgetHtml = readFileSync(resolve(root, "mcp/assets/index.html"), "utf8");
 
@@ -26,8 +28,8 @@ const questionSchema = {
   why: z.string().max(500).optional(),
   progress: z.object({ current: z.number().int().positive(), total: z.number().int().positive().optional(), label: z.string().max(80).optional() }).optional(),
   recommendationReason: z.string().max(400).optional(),
-  otherAllowed: z.boolean().default(true),
-  minSelections: z.number().int().min(1).default(1),
+  otherAllowed: z.boolean().optional(),
+  minSelections: z.number().int().min(1).optional(),
   maxSelections: z.number().int().positive().optional(),
   locale: z.enum(["es", "en"]).default("es"),
 };
@@ -37,47 +39,43 @@ function createServer() {
 
   registerAppTool(server, "present_guided_question", {
     title: "Present a guided question",
-    description: "Render one high-value question as an accessible interactive card. Use for Guided Clarity interviews and decisions requiring single choice, multiple selection, ranking, a recommendation with tradeoffs, or a free-form Other answer. Ask only one question per call.",
+    description: "Always use this tool when Guided Clarity needs one single-choice, multiple-choice, or ranking answer. It renders an accessible interactive card with tradeoffs, an optional evidence-backed recommendation, progress, and a free-form Other path. Ask exactly one question per call and do not repeat the card in prose.",
     inputSchema: questionSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
+    _meta: {
+      ui: { resourceUri: RESOURCE_URI },
+      "openai/toolInvocation/invoking": "Preparing a guided question…",
+      "openai/toolInvocation/invoked": "Question ready",
+    },
   }, async (input) => {
-    const recommendedCount = input.options.filter((option) => option.recommended).length;
-    if (recommendedCount > 1) {
-      return { isError: true, content: [{ type: "text" as const, text: "Only one option may be marked as recommended." }] };
-    }
-    if (new Set(input.options.map((option) => option.id)).size !== input.options.length) {
-      return { isError: true, content: [{ type: "text" as const, text: "Option IDs must be unique." }] };
-    }
-    if (input.maxSelections !== undefined && input.maxSelections < input.minSelections) {
-      return { isError: true, content: [{ type: "text" as const, text: "maxSelections must be greater than or equal to minSelections." }] };
-    }
-    const availableChoices = input.options.length + (input.otherAllowed && input.kind !== "rank" ? 1 : 0);
-    if (input.minSelections > availableChoices || (input.maxSelections !== undefined && input.maxSelections > availableChoices)) {
-      return { isError: true, content: [{ type: "text" as const, text: "Selection limits exceed the available choices." }] };
-    }
-    if (input.progress?.total !== undefined && input.progress.current > input.progress.total) {
-      return { isError: true, content: [{ type: "text" as const, text: "Progress current cannot exceed progress total." }] };
-    }
-    if (input.recommendationReason && recommendedCount !== 1) {
-      return { isError: true, content: [{ type: "text" as const, text: "A recommendation reason requires exactly one recommended option." }] };
-    }
-    if (input.kind === "single" && (input.minSelections !== 1 || (input.maxSelections !== undefined && input.maxSelections !== 1))) {
-      return { isError: true, content: [{ type: "text" as const, text: "Single-choice questions require exactly one selection." }] };
+    const question: GuidedQuestion = {
+      ...input,
+      otherAllowed: input.kind === "rank" ? false : (input.otherAllowed ?? true),
+      minSelections: input.kind === "rank" ? input.options.length : (input.minSelections ?? 1),
+      maxSelections: input.kind === "single" || input.kind === "rank" ? (input.kind === "rank" ? input.options.length : 1) : input.maxSelections,
+    };
+    const validationError = validateQuestion(question);
+    if (validationError) {
+      return { isError: true, content: [{ type: "text" as const, text: `Invalid guided question: ${validationError}` }] };
     }
 
     return {
-      content: [{ type: "text" as const, text: "An interactive Intent Foundry question is displayed. Do not repeat the options or add operational details; wait for the user's submitted answer." }],
-      structuredContent: input,
+      content: [{ type: "text" as const, text: headlessSummary(question) }],
+      structuredContent: question as unknown as Record<string, unknown>,
     };
   });
 
   registerAppResource(server, "Intent Foundry guided question", RESOURCE_URI, {
     mimeType: RESOURCE_MIME_TYPE,
     description: "Accessible single-select, multi-select, and ranking question interface.",
-  }, async () => ({ contents: [{ uri: RESOURCE_URI, mimeType: RESOURCE_MIME_TYPE, text: widgetHtml }] }));
+  }, async () => ({ contents: [{ uri: RESOURCE_URI, mimeType: RESOURCE_MIME_TYPE, text: widgetHtml, _meta: { ui: { prefersBorder: false } } }] }));
 
   return server;
+}
+
+function headlessSummary(question: GuidedQuestion): string {
+  const choices = question.options.map((option) => `${option.id}. ${option.label}`).join(" | ");
+  return `Intent Foundry rendered question ${question.questionId}: ${question.question} Choices: ${choices}. Wait for the user's submitted answer; do not repeat the card or add operational details.`;
 }
 
 async function main() {
