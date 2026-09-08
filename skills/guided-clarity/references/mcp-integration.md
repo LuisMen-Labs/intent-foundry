@@ -28,6 +28,16 @@ On the next normal user turn after a short adaptive sequence, call `read_guided_
 
 ## Consume the answer
 
+### Recover a repeated card or uncertain save
+
+1. Read the active `sessionId` with `read_guided_session` before retrying the questionnaire. Report only the state returned, not an assumption based on the error banner.
+2. Validate and persist any returned answers in the user's project before continuing. Keep user content out of plugin repositories, test fixtures, and public reports.
+3. A finalized session is complete or deliberately closed: retrieve its actual answers, including missing/skipped questions, and do not re-present it to force resubmission.
+4. Re-presenting the exact same sequence preserves its server state. Reusing a session ID with different questions is rejected; use a new unique ID for a genuinely new block, never to silently overwrite old answers.
+5. If the session is unavailable or expired, say that recovery could not be confirmed. Do not claim a local draft is a saved answer, and do not repeat a failing card indefinitely.
+
+The UI reads server state on mount even without `window.openai.widgetState`. It resumes at the first unanswered question or shows completion. Save/finalize transport failures trigger a read-back check; the UI reports success only when the stored state confirms that operation. This does not extend the temporary queue's retention or guarantee host-level automatic continuation.
+
 The component should submit through the internal `submit_guided_answer` tool only. Its structured tool result is the answer envelope consumed by the host. Do not also call `ui/message` or `ui/update-model-context`: the former can require a follow-up-message confirmation, while the latter creates a redundant delivery stage and can produce a false failure after the server has already accepted the answer.
 
 Treat the successful MCP tool result as the complete submission. A true tool rejection may show a retryable error. Deduplicate repeated envelopes by active `questionId` when persisting durable state. Automatic creation of the next model turn is host-dependent and must be tested honestly; never fabricate a visible chat prompt merely to wake the model.

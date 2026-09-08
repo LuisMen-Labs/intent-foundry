@@ -52,6 +52,7 @@ Help the user understand and express what they mean before an AI acts. Treat the
 - After calling the MCP question tool, do not repeat its question, choices, or a second assistant summary. Wait for the submitted answer.
 - Treat `Skip` as Unknown, never as rejection or confirmation. Preserve the unanswered decision and adapt, park, or revisit it according to impact.
 - On the next normal turn after a microsequence, call `read_guided_session` for the active `sessionId` before asking anything else. Validate and persist every returned answer, then prepare the next adaptive block. Do not claim the UI can start a model turn automatically.
+- When a card repeats, disappears, or reports a save error, read its session before presenting it again or claiming answers were lost. A failed acknowledgment can follow a successful save. If finalized, retrieve and persist the answers; do not ask the user to submit them again. See the recovery contract in [mcp-integration.md](references/mcp-integration.md).
 
 Use this compact fallback only when the host permits textual choices:
 

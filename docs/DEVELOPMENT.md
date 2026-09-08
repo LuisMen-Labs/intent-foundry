@@ -37,3 +37,9 @@ Serve `mcp/assets` only on loopback and open one of:
 - Dependency advisory detail is reviewed and no unacceptable runtime finding remains.
 - Built artifact hashes are recorded.
 - Privacy, security, installation, and version documentation match behavior.
+
+## Recovery regression browser test
+
+After `npm run build`, run `npm run test:browser` with Playwright available in the development environment. Alternatively set `INTENT_FOUNDRY_PLAYWRIGHT_MODULE` to an installed Playwright `index.mjs`. Set `INTENT_FOUNDRY_BROWSER_CHANNEL=msedge` (or `chrome`) to use an installed browser rather than downloading Chromium.
+
+The test serves only on loopback, uses a headless isolated browser, and relays a simulated MCP Apps host to the real bundled server. It checks multi-select, missing widget cache, lost save/finalize replies and finalized remount. It never loads the live user's session store. This is integration coverage, not proof of behavior in every native host.

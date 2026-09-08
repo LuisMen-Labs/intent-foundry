@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { isDeepStrictEqual } from "node:util";
 import { resolve } from "node:path";
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -10,8 +11,8 @@ import type { GuidedSession, GuidedSessionSnapshot } from "../../shared/session"
 import { checkpointQuestionIds, upsertSessionAnswer, validateSession, validateSessionAnswer } from "../../shared/session";
 import { FileSessionStore, type StoredSession } from "./session-store";
 
-const VERSION = "0.2.0-beta.11";
-const RESOURCE_URI = "ui://intent-foundry/guided-session-v11.html";
+const VERSION = "0.2.0-beta.12";
+const RESOURCE_URI = "ui://intent-foundry/guided-session-v12.html";
 const root = resolve(__dirname, "..");
 const widgetHtml = readFileSync(resolve(root, "mcp/assets/index.html"), "utf8");
 
@@ -86,14 +87,11 @@ function createServer() {
 
   const rememberSession = (session: GuidedSession) => {
     const prior = sessions.get(session.sessionId);
-    const questionIds = new Set(session.questions.map((question) => question.questionId));
-    sessions.put({
-      session,
-      answers: (prior?.answers ?? []).filter((answer) => questionIds.has(answer.questionId)),
-      finalized: false,
-      completedCheckpoints: (prior?.completedCheckpoints ?? []).filter((checkpointId) =>
-        session.checkpoints?.some((checkpoint) => checkpoint.checkpointId === checkpointId)),
-    });
+    if (prior) {
+      if (!isDeepStrictEqual(prior.session, JSON.parse(JSON.stringify(session)))) throw new Error("session_definition_conflict");
+      return; // Re-presenting a card must not reopen a completed session.
+    }
+    sessions.put({ session, answers: [], finalized: false, completedCheckpoints: [] });
   };
 
   registerAppTool(server, "present_guided_question", {
@@ -123,7 +121,7 @@ function createServer() {
     title: "Present a guided question sequence",
     description: "Present a navigable sequence when every queued question remains valid regardless of earlier selections. For a longer predetermined review, include ordered checkpoints so the card validates and saves each block before advancing while showing global question and block progress. Use a new sequence after a material branch. Do not hide dependent branches inside a fixed questionnaire.",
     inputSchema: guidedSessionSchema,
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     _meta: {
       ui: { resourceUri: RESOURCE_URI },
       "openai/toolInvocation/invoking": "Preparing a guided sequence…",
@@ -140,7 +138,11 @@ function createServer() {
     if (validationError) {
       return { isError: true, content: [{ type: "text" as const, text: `Invalid guided session: ${validationError}` }] };
     }
-    rememberSession(session);
+    try { rememberSession(session); } catch (error) {
+      return { isError: true, content: [{ type: "text" as const, text: error instanceof Error && error.message === "session_definition_conflict"
+        ? "Session ID already belongs to different questions. Use a new sessionId; saved answers were preserved."
+        : "Could not persist the guided session." }] };
+    }
     return {
       content: [{ type: "text" as const, text: headlessSessionSummary(session) }],
       structuredContent: session as unknown as Record<string, unknown>,

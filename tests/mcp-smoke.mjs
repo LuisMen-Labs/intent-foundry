@@ -1,10 +1,16 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import assert from "node:assert/strict";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
+const isolatedTemp = mkdtempSync(join(tmpdir(), "intent-foundry-smoke-"));
+const testEnv = { ...process.env, TMP: isolatedTemp, TEMP: isolatedTemp, TMPDIR: isolatedTemp };
 const client = new Client({ name: "intent-foundry-smoke", version: "1.0.0" });
 const transport = new StdioClientTransport({
   command: process.execPath,
+  env: testEnv,
   args: ["mcp/server.cjs", "--stdio"],
 });
 
@@ -166,6 +172,7 @@ try {
   const restartedClient = new Client({ name: "intent-foundry-restart-smoke", version: "1.0.0" });
   const restartedTransport = new StdioClientTransport({
     command: process.execPath,
+  env: testEnv,
     args: ["mcp/server.cjs", "--stdio"],
   });
   await restartedClient.connect(restartedTransport);
@@ -182,9 +189,28 @@ try {
     await restartedClient.close();
   }
 
-  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-session-v11.html" });
+  const replay = await client.callTool({ name: "present_guided_sequence", arguments: {
+    sessionId: "smoke-session", questions: sequence.structuredContent.questions, checkpoints: sequence.structuredContent.checkpoints,
+  } });
+  assert.equal(replay.isError, undefined);
+  const stillFinalized = await client.callTool({ name: "read_guided_session", arguments: { sessionId: "smoke-session" } });
+  assert.equal(stillFinalized.structuredContent.finalized, true);
+  assert.equal(stillFinalized.structuredContent.answers[0].selected[0], "B");
+  const immutable = await client.callTool({ name: "save_guided_session_answer", arguments: {
+    sessionId: "smoke-session", answer: { questionId: "sequence-1", kind: "single", selected: ["A"], labels: ["Alpha"] },
+  } });
+  assert.equal(immutable.isError, true);
+  const conflict = await client.callTool({ name: "present_guided_sequence", arguments: {
+    sessionId: "smoke-session", questions: [{ ...sequence.structuredContent.questions[0], question: "Different meaning?" }],
+  } });
+  assert.equal(conflict.isError, true);
+  const preserved = await client.callTool({ name: "read_guided_session", arguments: { sessionId: "smoke-session" } });
+  assert.deepEqual(preserved.structuredContent.answers, stillFinalized.structuredContent.answers);
+
+  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-session-v12.html" });
   assert(resource.contents[0].text.includes("Intent Foundry"));
   process.stdout.write("MCP smoke test passed\n");
 } finally {
   await client.close();
+  rmSync(isolatedTemp, { recursive: true, force: true });
 }
