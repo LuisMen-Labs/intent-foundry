@@ -11,8 +11,8 @@ import type { GuidedSession, GuidedSessionSnapshot } from "../../shared/session"
 import { checkpointQuestionIds, upsertSessionAnswer, validateSession, validateSessionAnswer } from "../../shared/session";
 import { FileSessionStore, type StoredSession } from "./session-store";
 
-const VERSION = "0.2.0-beta.12";
-const RESOURCE_URI = "ui://intent-foundry/guided-session-v12.html";
+const VERSION = "0.2.0-beta.13";
+const RESOURCE_URI = "ui://intent-foundry/guided-session-v13.html";
 const root = resolve(__dirname, "..");
 const widgetHtml = readFileSync(resolve(root, "mcp/assets/index.html"), "utf8");
 
@@ -111,6 +111,12 @@ function createServer() {
       return { isError: true, content: [{ type: "text" as const, text: `Invalid guided question: ${validationError}` }] };
     }
 
+    try {
+      rememberSession({ marker: "intent_foundry_session_v1", sessionId: question.questionId, questions: [question] });
+    } catch {
+      return { isError: true, content: [{ type: "text" as const, text: "Could not preserve this question. Use a unique questionId for new questions; existing answers were preserved." }] };
+    }
+
     return {
       content: [{ type: "text" as const, text: headlessSummary(question) }],
       structuredContent: question as unknown as Record<string, unknown>,
@@ -153,18 +159,26 @@ function createServer() {
     title: "Submit a guided answer",
     description: "Validate and return an answer submitted inside the Intent Foundry card. This is an internal UI transport; do not call it to invent or infer a user's answer.",
     inputSchema: { question: z.object(questionSchema), answer: answerSchema },
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     _meta: {
       ui: { visibility: ["app"] },
       "openai/toolInvocation/invoking": "Saving answer…",
       "openai/toolInvocation/invoked": "Answer saved",
     },
   }, async ({ question, answer }) => {
-    const validationError = validateAnswer(question as GuidedQuestion, answer as GuidedAnswer);
+    const stored = sessions.get(question.questionId);
+    const original = stored?.session.questions[0];
+    if (!stored || !original || stored.session.questions.length !== 1 || !isDeepStrictEqual(original, normalizeQuestion(question))) {
+      return { isError: true, content: [{ type: "text" as const, text: "Unknown, expired, or changed question. Read the original saved session." }] };
+    }
+    if (stored.finalized) return { isError: true, content: [{ type: "text" as const, text: "Guided session is finalized" }] };
+    const validationError = validateAnswer(original, answer as GuidedAnswer);
     if (validationError) {
       return { isError: true, content: [{ type: "text" as const, text: `Invalid guided answer: ${validationError}` }] };
     }
-    const normalized = answer as GuidedAnswer;
+    const normalized: GuidedAnswer = { ...answer, labels: answer.selected.map((id) => original.options.find((option) => option.id === id)!.label) };
+    stored.answers = upsertSessionAnswer(stored.answers, normalized);
+    sessions.put(stored);
     return {
       content: [{ type: "text" as const, text: `intent_foundry_answer_v1\n${JSON.stringify(normalized)}` }],
       structuredContent: { marker: "intent_foundry_answer_v1", answer: normalized },
@@ -190,7 +204,9 @@ function createServer() {
     if (validationError) {
       return { isError: true, content: [{ type: "text" as const, text: `Invalid guided session answer: ${validationError}` }] };
     }
-    stored.answers = upsertSessionAnswer(stored.answers, normalized);
+    const original = stored.session.questions.find((question) => question.questionId === normalized.questionId)!;
+    const canonical = { ...normalized, labels: normalized.selected.map((id) => original.options.find((option) => option.id === id)!.label) };
+    stored.answers = upsertSessionAnswer(stored.answers, canonical);
     sessions.put(stored);
     const state = snapshot(stored);
     return {

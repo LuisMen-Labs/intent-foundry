@@ -54,6 +54,7 @@ try {
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   // A minimal MCP Apps host. No window.openai/widgetState: exercise actual server recovery.
   await page.evaluate((initialResult) => {
+    window.testResult = initialResult;
     window.addEventListener("message", async (event) => {
       const msg = event.data;
       if (!msg || msg.jsonrpc !== "2.0" || !msg.method) return;
@@ -61,7 +62,7 @@ try {
       if (msg.method === "ui/initialize") {
         reply({ protocolVersion: msg.params.protocolVersion, hostInfo: { name: "test-host", version: "1" }, hostCapabilities: { serverTools: {} }, hostContext: { theme: "light", locale: "es" } });
       } else if (msg.method === "ui/notifications/initialized") {
-        event.source.postMessage({ jsonrpc: "2.0", method: "ui/notifications/tool-result", params: initialResult }, event.origin);
+        event.source.postMessage({ jsonrpc: "2.0", method: "ui/notifications/tool-result", params: window.testResult }, event.origin);
       } else if (msg.method === "tools/call") {
         try { reply(await window.mcpCall(msg.params)); }
         catch (error) { event.source.postMessage({ jsonrpc: "2.0", id: msg.id, error: { code: -32603, message: error.message } }, event.origin); }
@@ -96,6 +97,28 @@ try {
   await card.getByRole("heading", { name: "Sesión finalizada", exact: true }).waitFor();
   assert.equal(await card.getByRole("checkbox").count(), 0);
   assert.equal(await card.getByRole("button", { name: "Anterior", exact: true }).isDisabled(), true);
+  await card.getByRole("button", { name: "Obtener respuestas para el chat", exact: true }).click();
+  const exported = await card.getByRole("textbox", { name: "Respuestas recuperadas" }).inputValue();
+  const exportedState = JSON.parse(exported.split("\n").slice(1).join("\n"));
+  assert.equal(exportedState.answers.length, 2);
+  assert.deepEqual(exportedState.answers[0].selected, ["A", "B"]);
+
+  const single = await client.callTool({ name: "present_guided_question", arguments: {
+    questionId: "browser-single", question: "Pregunta individual", kind: "single", locale: "es",
+    options: [{ id: "A", label: "Primera" }, { id: "B", label: "Segunda" }],
+  } });
+  await page.evaluate((payload) => { window.testResult = payload; document.querySelector("iframe").src = "/app"; }, single);
+  await card.getByRole("heading", { name: "Pregunta individual", exact: true }).waitFor();
+  await card.locator(".option label").nth(1).click();
+  await card.getByRole("button", { name: "Siguiente", exact: true }).click();
+  await card.getByRole("heading", { name: "Bloque completado", exact: true }).waitFor();
+  await page.evaluate(() => { document.querySelector("iframe").src = "/app"; });
+  await card.getByRole("heading", { name: "Bloque completado", exact: true }).waitFor();
+  await card.getByRole("button", { name: "Finalizar", exact: true }).click();
+  await card.getByRole("heading", { name: "Sesión finalizada", exact: true }).waitFor();
+  state = await client.callTool({ name: "read_guided_session", arguments: { sessionId: "browser-single" } });
+  assert.equal(state.structuredContent.answers[0].selected[0], "B");
+  assert.equal(state.structuredContent.finalized, true);
   assert.deepEqual(errors, []);
   console.log("Browser recovery passed: multi-select, lost save response, remount, previous answers, lost finalize response, finalized remount.");
 } finally {

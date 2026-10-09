@@ -6,7 +6,7 @@ import type { GuidedAnswer, GuidedQuestion } from "../../shared/question";
 import { validateAnswer, validateQuestion } from "../../shared/question";
 import type { GuidedSession } from "../../shared/session";
 import { validateSession } from "../../shared/session";
-import { deliverGuidedAnswer } from "./delivery";
+import { deliverGuidedAnswer, withTransportTimeout } from "./delivery";
 import { restoreSession, type Draft, type PersistedState } from "./session-state";
 import "./styles.css";
 
@@ -78,9 +78,10 @@ function App() {
   const loadingToken = useRef(0);
   const busy = useRef(false);
   const [hostError, setHostError] = useState<string | null>(null);
+  const [exportedAnswers, setExportedAnswers] = useState("");
 
   const { app, error } = useApp({
-    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.12" },
+    appInfo: { name: "Intent Foundry", version: "0.2.0-beta.13" },
     capabilities: {},
     onAppCreated: (created: McpApp) => {
       created.ontoolresult = async (result) => {
@@ -121,13 +122,10 @@ function App() {
         setLoading(true);
         try {
           let saved: PersistedState | undefined;
-          if (nextSession.source === "sequence") {
-            const result = await created.callServerTool({ name: "read_guided_session", arguments: { sessionId: nextSession.sessionId } });
+          {
+            const result = await withTransportTimeout(() => created.callServerTool({ name: "read_guided_session", arguments: { sessionId: nextSession.sessionId } }));
             if (result.isError) throw new Error("session_unavailable");
             saved = restoreSession(nextSession, result.structuredContent, window.openai?.widgetState);
-          } else {
-            const cached = window.openai?.widgetState;
-            if (cached?.sessionId === nextSession.sessionId) saved = cached;
           }
           if (token !== loadingToken.current) return;
           setCurrentIndex(saved ? saved.currentIndex : 0);
@@ -170,7 +168,7 @@ function App() {
 
   const finalizeSession = async () => {
     setStatus("sending");
-    if (!previewSession && session.source === "sequence") {
+    if (!previewSession) {
       const result = await deliverGuidedAnswer({
         submit: () => app!.callServerTool({ name: "finalize_guided_session", arguments: { sessionId: session.sessionId } }),
         reconcile: async () => {
@@ -201,6 +199,20 @@ function App() {
               ? <p><strong>{savedIds.length} de {session.questions.length}</strong> {t.answersSaved} {t.resume}</p>
               : <p>{t.blockReadyDetail}</p>}
           </div>
+          {!previewSession && <div>
+            <button disabled={status === "sending"} onClick={() => runAction(async () => {
+              setStatus("sending");
+              const result = await deliverGuidedAnswer({ submit: async () => {
+                const read = await app!.callServerTool({ name: "read_guided_session", arguments: { sessionId: session.sessionId } });
+                if (read.isError) return read;
+                restoreSession(session, read.structuredContent);
+                setExportedAnswers(`intent_foundry_session_state_v1\n${JSON.stringify(read.structuredContent, null, 2)}`);
+                return read;
+              } });
+              setStatus(result.status);
+            })}>{locale === "es" ? "Obtener respuestas para el chat" : "Get answers for the chat"}</button>
+            {exportedAnswers && <textarea readOnly aria-label={locale === "es" ? "Respuestas recuperadas" : "Recovered answers"} value={exportedAnswers} rows={10} onFocus={(event) => event.currentTarget.select()} />}
+          </div>}
           <footer>
             <button className="previous" disabled={finalized || session.questions.length === 0} onClick={() => { setCurrentIndex(session.questions.length - 1); setStatus("sent"); }}>{t.previous}</button>
             <span className={`status ${status}`} role="status">{status === "server-error" ? t.serverError : t.sent}</span>
@@ -264,7 +276,7 @@ function App() {
         name: "submit_guided_answer",
         arguments: { question, answer: nextAnswer },
       }),
-      reconcile: session.source === "sequence" ? async () => {
+      reconcile: async () => {
         const result = await app!.callServerTool({ name: "read_guided_session", arguments: { sessionId: session.sessionId } });
         if (result.isError) return false;
         const restored = restoreSession(session, result.structuredContent);
@@ -280,7 +292,7 @@ function App() {
           && (stored.other ?? "") === (nextAnswer.other ?? "")
           && JSON.stringify(stored.kind === "multi" ? [...stored.selected].sort() : stored.selected)
             === JSON.stringify(nextAnswer.kind === "multi" ? [...nextAnswer.selected].sort() : nextAnswer.selected));
-      } : undefined,
+      },
     });
     if (result.serverAccepted) setSavedIds((current) => Array.from(new Set([...current, nextAnswer.questionId])));
     setStatus(result.status);
@@ -292,10 +304,10 @@ function App() {
     if (!checkpoint || previewSession) return true;
     setStatus("sending");
     try {
-      const result = await app!.callServerTool({
+      const result = await withTransportTimeout(() => app!.callServerTool({
         name: "checkpoint_guided_session",
         arguments: { sessionId: session.sessionId, checkpointId: checkpoint.checkpointId },
-      });
+      }));
       if (result.isError) {
         setStatus("server-error");
         return false;

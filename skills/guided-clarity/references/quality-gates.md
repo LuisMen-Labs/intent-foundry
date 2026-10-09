@@ -45,7 +45,7 @@ Use these gates to keep Guided Clarity from degrading into a generic questionnai
 ## Before completing
 
 - The outcome and testable success criteria are explicit.
-- Blocking unknowns are resolved or clearly accepted by the user.
+- Blocking unknowns are resolved. An explicitly accepted residual uncertainty may cease to block only when the success criteria remain achievable; accepting an incomplete delivery alone does not make it complete.
 - Assumptions and falsifiers are visible.
 - Permissions do not silently expand from analysis to execution.
 - The user gets a chance to correct the final Intent Pack.

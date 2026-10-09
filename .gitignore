@@ -5,3 +5,4 @@ node_modules/
 .vite/
 __pycache__/
 .pytest_cache/
+.audit-tmp/

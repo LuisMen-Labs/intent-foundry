@@ -31,7 +31,7 @@ Example prompts:
 
 ## Two product layers
 
-- **Full Codex plugin (`0.2.0-beta.12`):** Skill + local MCP server + compact interactive UI. This is the premium experience under active validation.
+- **Full Codex plugin (`0.2.0-beta.13`):** Skill + local MCP server + compact interactive UI. This is the premium experience under active validation.
 - **Portable Skill:** the reasoning workflow alone remains usable in compatible Skill hosts such as Claude, Gemini, Antigravity, and Codex, but its visual controls depend on the host.
 
 ## Install the portable Skill
@@ -63,7 +63,7 @@ Platform-ready downloads and exact installation paths are documented in [docs/IN
 
 ## Status
 
-Version `0.2.0-beta.12` restores saved server answers before showing a sequence, including after a host remount without widget state. Completed sessions stay completed; repeated presentation preserves answers and rejects conflicting question definitions. If a save or finish acknowledgment is lost, the card reads back the server state before reporting failure. See [the audit and regression coverage](docs/AUDIT-2026-09-08.md).
+Version `0.2.0-beta.13` restores saved server answers before showing a sequence, including after a host remount without widget state. Completed sessions stay completed; repeated presentation preserves answers and rejects conflicting question definitions. If a save or finish acknowledgment is lost, the card reads back the server state before reporting failure. See [the audit and regression coverage](docs/AUDIT-2026-09-08.md).
 
 The bounded queue remains hashed, temporary, limited to 20 sessions and 24 hours, and validated on every read. Save confirmed answers into the user's project for durable continuity. Reload the plugin/app to use the new bundle; existing cards may retain the old runtime. Native-host revalidation, a screen-reader audit and comparative user evidence remain pending.
 

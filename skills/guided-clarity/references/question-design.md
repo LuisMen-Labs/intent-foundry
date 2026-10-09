@@ -29,6 +29,7 @@ For `multi`, omit `maxSelections` by default. A lower cap is valid only when a r
 
 - Recommend when confirmed user priorities plus evidence or a transparent decision criterion distinguish an option.
 - Mark exactly one option or one combination with `(Recommended)` or `(Recomendado)`.
+- For a combination, respect the actual control schema: if it only permits one recommended option, name the complete combination with its rationale/downside in a visible explanation instead of marking only one component. See the snapshot/combination contract in [mcp-integration.md](mcp-integration.md).
 - Explain the reason and main downside separately.
 - If the evidence is insufficient, say exactly what is missing. Do not use a recommendation label.
 - Never persist the recommendation as Confirmed until the user chooses it.

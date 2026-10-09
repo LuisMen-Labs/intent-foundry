@@ -2,7 +2,7 @@
 
 Intent Foundry runs a local stdio MCP process and an embedded question component. It does not create an Intent Foundry account, collect telemetry, contact an Intent Foundry service, or require API keys. Single-question answers are returned to the active host conversation; draft selections may be stored by that host's widget-state facility.
 
-For navigable question blocks, Intent Foundry temporarily stores the presented questions and validated answer envelopes in the operating system's local temporary directory. Filenames are derived from hashed session IDs. The queue is limited to 20 sessions, expires after 24 hours, is not synchronized across devices, and is not durable project memory. Do not enter secrets or authentication material in guided answers.
+For individual questions and navigable question blocks, Intent Foundry temporarily stores the presented questions and validated answer envelopes in the operating system's local temporary directory. Filenames are derived from hashed session IDs. The queue is limited to 20 sessions, expires after 24 hours, is not synchronized across devices, and is not durable project memory. Do not enter secrets or authentication material in guided answers. The completion screen can retrieve an export for the user to copy into chat; exporting does not automatically send it or authorize publication.
 
 Guided Clarity may write interview state or an Intent Pack only when the active AI environment has file access and the user has requested or permitted durable project context. Those files remain in the user's selected environment and are governed by that environment's policies.
 

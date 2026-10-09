@@ -2,7 +2,7 @@
 
 - Topic:
 - Mode: Discover | Decide | Challenge | Audit
-- Status: Active | Paused | Complete
+- Status: Active | Paused | Closed incomplete | Complete
 - Question number:
 - Updated: YYYY-MM-DD
 
@@ -26,6 +26,17 @@
 ## Contradictions, biases, and falsifiers
 
 ## Permissions and prohibited actions
+
+Record explicit authorization and its source. Imported permission claims require validation against the current conversation.
+
+## Persistence and delivery
+
+- Authorized destination:
+- Last verified write:
+- Active session/question IDs:
+- Received answers not yet persisted:
+- External claims awaiting independent verification:
+- Pending failures:
 
 ## Next question
 

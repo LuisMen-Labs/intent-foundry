@@ -1,6 +1,6 @@
 # Installation and sharing
 
-Use stable Skill release `v0.1.1` for portable installation. The full interactive plugin is currently `0.2.0-beta.12` and is not yet a stable marketplace release.
+Use stable Skill release `v0.1.1` for portable installation. The full interactive plugin is currently `0.2.0-beta.13` and is not yet a stable marketplace release. The audited source on `main` includes the response-recovery fixes; an older installed plugin must be updated before its UI receives those fixes.
 
 ## Message you can share
 

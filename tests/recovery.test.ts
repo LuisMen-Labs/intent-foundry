@@ -19,6 +19,14 @@ const snapshot: GuidedSessionSnapshot = {
 };
 
 describe("session recovery", () => {
+  it("recovers a hanging submission after a bounded wait", async () => {
+    const result = await deliverGuidedAnswer({ submit: () => new Promise(() => {}), reconcile: async () => true }, 10);
+    assert.deepEqual(result, { status: "sent", serverAccepted: true });
+  });
+  it("returns a recoverable error when both transports hang", async () => {
+    const result = await deliverGuidedAnswer({ submit: () => new Promise(() => {}), reconcile: () => new Promise(() => {}) }, 10);
+    assert.deepEqual(result, { status: "server-error", serverAccepted: false });
+  });
   it("restores answers and resumes at the first unanswered question without a host cache", () => {
     const restored = restoreSession(session, snapshot);
     assert.equal(restored.currentIndex, 1);

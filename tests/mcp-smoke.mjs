@@ -64,11 +64,19 @@ try {
     name: "submit_guided_answer",
     arguments: {
       question: result.structuredContent,
-      answer: { questionId: "smoke-1", kind: "single", selected: ["A"], labels: ["Safe path"] },
+      answer: { questionId: "smoke-1", kind: "single", selected: ["A"], labels: ["Untrusted changed label"] },
     },
   });
   assert.equal(submitted.isError, undefined);
   assert.equal(submitted.structuredContent.answer.selected[0], "A");
+  assert.equal(submitted.structuredContent.answer.labels[0], "Safe path");
+  const singleSaved = await client.callTool({ name: "read_guided_session", arguments: { sessionId: "smoke-1" } });
+  assert.equal(singleSaved.structuredContent.answers[0].selected[0], "A");
+  const changedQuestion = await client.callTool({ name: "submit_guided_answer", arguments: {
+    question: { ...result.structuredContent, question: "Changed premise" },
+    answer: { questionId: "smoke-1", kind: "single", selected: ["B"], labels: ["Fast path"] },
+  } });
+  assert.equal(changedQuestion.isError, true);
 
   const sequence = await client.callTool({
     name: "present_guided_sequence",
@@ -177,6 +185,10 @@ try {
   });
   await restartedClient.connect(restartedTransport);
   try {
+    const singleResumed = await restartedClient.callTool({ name: "read_guided_session", arguments: { sessionId: "smoke-1" } });
+    assert.equal(singleResumed.structuredContent.answers[0].selected[0], "A");
+    const singleFinished = await restartedClient.callTool({ name: "finalize_guided_session", arguments: { sessionId: "smoke-1" } });
+    assert.equal(singleFinished.structuredContent.finalized, true);
     const resumed = await restartedClient.callTool({ name: "read_guided_session", arguments: { sessionId: "smoke-session" } });
     assert.equal(resumed.structuredContent.answers.length, 1);
     assert.equal(resumed.structuredContent.answers[0].selected[0], "B");
@@ -207,7 +219,7 @@ try {
   const preserved = await client.callTool({ name: "read_guided_session", arguments: { sessionId: "smoke-session" } });
   assert.deepEqual(preserved.structuredContent.answers, stillFinalized.structuredContent.answers);
 
-  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-session-v12.html" });
+  const resource = await client.readResource({ uri: "ui://intent-foundry/guided-session-v13.html" });
   assert(resource.contents[0].text.includes("Intent Foundry"));
   process.stdout.write("MCP smoke test passed\n");
 } finally {
